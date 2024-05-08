@@ -9,7 +9,7 @@ import helmet from "helmet"
 import http from "http"
 
 import { ApiKeyMiddleware } from "./middlewares"
-import { NotificationController } from "controllers"
+import { NotificationController } from "./controllers"
 
 class App {
     public app: Application

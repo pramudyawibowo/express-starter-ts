@@ -27,13 +27,17 @@ class NotificationController extends Controller {
         this.router.delete("/:id", this.destroy)
     }
 
-    public async index(req: Request, res: Response) {
+    public async index(req: Request, res: Response): Promise<Response> {
         try {
-            const notifications = await prisma.notification.findMany()
+            const { page = 1, perPage = 10} = req.query
+            const notifications = await prisma.notification.findMany({
+                skip: page ? (parseInt(page.toString()) - 1) * (perPage ? parseInt(perPage.toString()) : 10) : 0,
+                take: perPage ? parseInt(perPage.toString()) : 10,
+            })
             return super.success(res, "success", notifications)
         } catch (error) {
             console.error(error)
-            super.error(res, "error")
+            return super.error(res, "error")
         }
     }
 
@@ -70,6 +74,7 @@ class NotificationController extends Controller {
                     message: message,
                     json: req.body.json ? req.body.json : null,
                     createdAt: moment().add(7, "hours").toISOString(),
+                    updatedAt: moment().add(7, "hours").toISOString(),
                 },
             })
             return super.success(res, "success", notification)
@@ -97,7 +102,10 @@ class NotificationController extends Controller {
                 where: {
                     id: parseInt(id),
                 },
-                data: data,
+                data: {
+                    ...data,
+                    updatedAt: moment().add(7, "hours").toISOString(),
+                },
             })
 
             return super.success(res, "success", notification)
