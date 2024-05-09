@@ -3,6 +3,7 @@ import { Router, Request, Response } from "express"
 import { body, validationResult } from "express-validator"
 import { PrismaClient } from "@prisma/client"
 import moment from "moment"
+import NotificationResource from "../resources/NotificationResource"
 
 const prisma = new PrismaClient()
 
@@ -34,7 +35,7 @@ class NotificationController extends Controller {
                 skip: page ? (parseInt(page.toString()) - 1) * (perPage ? parseInt(perPage.toString()) : 10) : 0,
                 take: perPage ? parseInt(perPage.toString()) : 10,
             })
-            return super.success(res, "success", notifications)
+            return super.success(res, "success", new NotificationResource().collection(notifications))
         } catch (error) {
             console.error(error)
             return super.error(res, "error")
@@ -50,7 +51,7 @@ class NotificationController extends Controller {
                 },
             })
             if (!notification) return super.notFound(res, "Not Found")
-            return super.success(res, "success", notification)
+            return super.success(res, "success", new NotificationResource().get(notification))
         } catch (error) {
             console.error(error)
             return super.error(res, "error")
@@ -73,11 +74,9 @@ class NotificationController extends Controller {
                     title: title,
                     message: message,
                     json: req.body.json ? req.body.json : null,
-                    createdAt: moment().add(7, "hours").toISOString(),
-                    updatedAt: moment().add(7, "hours").toISOString(),
                 },
             })
-            return super.success(res, "success", notification)
+            return super.success(res, "success", new NotificationResource().get(notification))
         } catch (error) {
             console.error(error)
             return super.error(res, "error")
@@ -104,11 +103,10 @@ class NotificationController extends Controller {
                 },
                 data: {
                     ...data,
-                    updatedAt: moment().add(7, "hours").toISOString(),
                 },
             })
 
-            return super.success(res, "success", notification)
+            return super.success(res, "success", new NotificationResource().get(notification))
         } catch (error) {
             console.error(error)
             return super.error(res, "error")
