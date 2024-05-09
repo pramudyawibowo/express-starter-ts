@@ -44,6 +44,9 @@ importers:
       prisma:
         specifier: ^5.13.0
         version: 5.13.0
+      typescript:
+        specifier: ^5.4.5
+        version: 5.4.5
     devDependencies:
       '@eslint/js':
         specifier: ^9.1.1
