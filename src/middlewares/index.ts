@@ -1,3 +1,3 @@
-import ApiKeyMiddleware from "./ApiKeyMiddleware"
+import ApiKeyMiddleware from "./ApiKeyMiddleware";
 
-export { ApiKeyMiddleware }
+export { ApiKeyMiddleware };

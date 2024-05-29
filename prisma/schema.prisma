@@ -23,3 +23,31 @@ model Notification {
 
   @@map("notifications")
 }
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  phonenumber  String
+  password     String
+  refreshToken String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now())
+
+  otps Otp[]
+
+  @@map("users")
+}
+
+model Otp {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  otp       String
+  type      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("otps")
+}

@@ -1,3 +1,4 @@
-import NotificationController from "./NotificationController"
+import NotificationController from "./NotificationController";
+import AuthController from "./AuthController";
 
-export { NotificationController }
+export { NotificationController, AuthController };

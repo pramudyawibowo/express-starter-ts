@@ -1,3 +1,3 @@
 import NotificationResource from "./NotificationResource";
 
-export { NotificationResource }
+export { NotificationResource };

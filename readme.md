@@ -17,7 +17,7 @@
 -   Multer
 -   Nodemon
 
-ORM using Prisma & MySQL
+ORM using Prisma & PostgreSQL
 
 ## Usage
 

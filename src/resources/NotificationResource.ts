@@ -16,7 +16,7 @@ export default class NotificationResource {
             id: notification.id,
             title: notification.title,
             message: notification.message,
-            json: notification.json
+            json: notification.json,
         };
     }
 }
