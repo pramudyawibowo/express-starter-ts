@@ -22,13 +22,32 @@ const AuthMiddleware = async (req: Request, res: Response, next: NextFunction) =
                 status: 401,
             });
 
+        const dbtoken = await prisma.token.findFirst({
+            where: {
+                accessToken: token,
+            },
+        });
+        if (!dbtoken)
+            return res.status(401).json({
+                data: null,
+                message: "Unauthenticated",
+                status: 401,
+            });
+
         const user = await prisma.user.findFirst({
             where: {
                 phonenumber: decoded.phonenumber,
             },
         });
+        if (!user)
+            return res.status(401).json({
+                data: null,
+                message: "Unauthenticated",
+                status: 401,
+            });
 
         req.body.user = user;
+        req.body.token = token;
 
         next();
     } catch (error: any) {

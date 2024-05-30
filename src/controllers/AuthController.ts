@@ -129,12 +129,15 @@ class AuthController extends Controller {
                 phonenumber: user.phonenumber,
             });
 
-            await prisma.user.update({
-                where: {
-                    id: user.id,
-                },
+            await prisma.token.create({
                 data: {
-                    refreshToken: refreshToken,
+                    user: {
+                        connect: {
+                            id: user.id,
+                        },
+                    },
+                    accessToken: accessToken,
+                    refreshToken: refreshToken,                    
                 },
             });
 
@@ -150,13 +153,18 @@ class AuthController extends Controller {
 
     public async logout(req: Request, res: Response): Promise<Response> {
         try {
-            const { user } = req.body;
-            await prisma.user.update({
+            const { user, token } = req.body;
+            const dbtoken = await prisma.token.findFirst({
                 where: {
-                    id: parseInt(user.id),
+                    userId: user.id,
+                    accessToken: token,
                 },
-                data: {
-                    refreshToken: null,
+            });
+            if (!dbtoken) return super.notFound(res, "Token Not Found");
+
+            await prisma.token.delete({
+                where: {
+                    id: dbtoken.id,
                 },
             });
             return super.success(res, "success");
@@ -177,12 +185,27 @@ class AuthController extends Controller {
                     phonenumber: decoded.phonenumber,
                 },
             });
-
             if (!user) return super.unauthorized(res, "Unauthorized");
-            if (user.refreshToken !== refreshToken) return super.unauthorized(res, "Unauthorized");
+
+            const dbtoken = await prisma.token.findFirst({
+                where: {
+                    userId: user.id,
+                    refreshToken: refreshToken,
+                },
+            });
+            if (!dbtoken) return super.unauthorized(res, "Unauthorized");
 
             const newAccessToken = getAccessToken({
                 phonenumber: user.phonenumber,
+            });
+
+            await prisma.token.update({
+                where: {
+                    id: dbtoken.id,
+                },
+                data: {
+                    accessToken: newAccessToken,
+                },
             });
 
             return super.success(res, "success", {

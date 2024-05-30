@@ -4,7 +4,6 @@ CREATE TABLE "users" (
     "name" TEXT NOT NULL,
     "phonenumber" TEXT NOT NULL,
     "password" TEXT NOT NULL,
-    "refreshToken" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 

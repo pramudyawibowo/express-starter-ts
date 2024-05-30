@@ -16,7 +16,6 @@ export default class UserResource {
             id: User.id,
             name: User.name,
             phonenumber: User.phonenumber,
-            refreshToken: User.refreshToken,
-        };
+        }
     }
 }
