@@ -1,13 +1,14 @@
 import { PrismaClient } from "@prisma/client";
 import Controller from "./Controller";
-import { Request, Response, Router } from "express";
+import type { Request, Response } from "express";
+import { Router } from "express";
 import { body, validationResult } from "express-validator";
 import { hashPassword, comparePassword } from "../helpers/Bcrypt";
 import { formatPhonenumber } from "../helpers/Formatter";
 import { getRefreshToken, getAccessToken, verifyRefreshToken } from "../helpers/Jwt";
 import { generateOtp, sendOtp, verifyOtp, checkThrottle, checkDailyLimit } from "../helpers/Otp";
-import AuthMiddleware from "../middlewares/AuthMiddleware";
-import UserResource from "../resources/UserResource";
+import { AuthMiddleware } from "../middlewares";
+import { UserResource } from "../resources";
 
 const prisma = new PrismaClient();
 

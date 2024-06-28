@@ -1,5 +1,6 @@
 import "dotenv/config";
-import express, { Application, Request, Response } from "express";
+import express from "express";
+import type { Application, Request, Response } from "express";
 import bodyParser from "body-parser";
 import multer from "multer";
 import cors from "cors";

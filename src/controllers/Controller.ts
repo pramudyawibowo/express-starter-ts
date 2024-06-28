@@ -1,4 +1,4 @@
-import { Response } from "express";
+import type { Response } from "express";
 
 export default class Controller {
     public success(response: Response, message: string, data: object | null = null): Response {

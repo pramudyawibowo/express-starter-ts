@@ -1,4 +1,4 @@
-import { User } from "@prisma/client";
+import type { User } from "@prisma/client";
 
 export default class UserResource {
     collection(Users: User[]): object[] {

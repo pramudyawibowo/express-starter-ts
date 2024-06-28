@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from "express";
+import type { Request, Response, NextFunction } from "express";
 import { verifyAccessToken } from "../helpers/Jwt";
 import { PrismaClient } from "@prisma/client";
 
@@ -18,7 +18,7 @@ const AuthMiddleware = async (req: Request, res: Response, next: NextFunction) =
         if (!decoded)
             return res.status(401).json({
                 data: null,
-                message: "Unauthenticated",
+                message: "Token Invalid",
                 status: 401,
             });
 

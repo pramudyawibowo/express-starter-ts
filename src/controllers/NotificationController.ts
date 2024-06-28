@@ -1,8 +1,8 @@
 import Controller from "./Controller";
-import { Router, Request, Response } from "express";
+import type { Request, Response } from "express";
+import { Router } from "express";
 import { body, validationResult } from "express-validator";
 import { PrismaClient } from "@prisma/client";
-import moment from "moment";
 import NotificationResource from "../resources/NotificationResource";
 
 const prisma = new PrismaClient();

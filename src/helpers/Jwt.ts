@@ -8,7 +8,7 @@ const secret_refresh = process.env.JWT_SECRET_REFRESH_TOKEN!;
 const expired_refresh = process.env.JWT_EXPIRED_REFRESH_TOKEN!;
 
 type Payload = {
-    phonenumber: String;
+    phonenumber: string;
 };
 
 export const getRefreshToken = (payload: Payload): string => {
