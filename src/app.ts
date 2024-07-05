@@ -7,11 +7,11 @@ import compression from "compression";
 import helmet from "helmet";
 import http from "http";
 import bodyParser from "body-parser";
+import path from "path";
+import serveIndex from "serve-index";
 
 import { ApiKeyMiddleware, MulterMiddleware } from "./middlewares";
 import { NotificationController, AuthController, ArticleController } from "./controllers";
-import path from "path";
-import serveIndex from "serve-index";
 
 class App {
     public app: Application;
@@ -36,7 +36,11 @@ class App {
         this.app.use(morgan("dev"));
         this.app.use(compression());
         this.app.use(helmet());
-        this.app.use("/storage", express.static(path.join(__dirname, "public/uploads")), serveIndex(path.join(__dirname, "public/uploads"), { icons: true }));
+        this.app.use(
+            "/storage",
+            express.static(path.join(__dirname, "public/uploads")),
+            serveIndex(path.join(__dirname, "public/uploads"), { icons: true })
+        );
     }
 
     public middlewares(): void {

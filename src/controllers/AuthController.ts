@@ -138,7 +138,7 @@ class AuthController extends Controller {
                         },
                     },
                     accessToken: accessToken,
-                    refreshToken: refreshToken,                    
+                    refreshToken: refreshToken,
                 },
             });
 

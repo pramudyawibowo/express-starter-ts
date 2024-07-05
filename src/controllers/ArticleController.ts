@@ -145,7 +145,7 @@ class ArticleController extends Controller {
                     content: content.toString(),
                 },
             });
-            
+
             return super.success(res, "success", new ArticleResource().get(article));
         } catch (error: any) {
             console.error(error.message);
