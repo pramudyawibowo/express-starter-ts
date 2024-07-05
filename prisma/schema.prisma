@@ -53,15 +53,41 @@ model Otp {
 }
 
 model Token {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  accessToken String
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  accessToken  String
   refreshToken String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@map("tokens")
+}
+
+model Article {
+  id        Int      @id @default(autoincrement())
+  slug      String   @unique
+  title     String   @db.Text
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  images ArticleImage[]
+
+  @@map("articles")
+}
+
+model ArticleImage {
+  id        Int      @id @default(autoincrement())
+  articleId Int
+  path      String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  article Article @relation(fields: [articleId], references: [id])
+
+  @@index([articleId])
+  @@map("article_images")
 }

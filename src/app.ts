@@ -1,16 +1,17 @@
 import "dotenv/config";
 import express from "express";
 import type { Application, Request, Response } from "express";
-import bodyParser from "body-parser";
-import multer from "multer";
 import cors from "cors";
 import morgan from "morgan";
 import compression from "compression";
 import helmet from "helmet";
 import http from "http";
+import bodyParser from "body-parser";
 
-import { ApiKeyMiddleware } from "./middlewares";
-import { NotificationController, AuthController } from "./controllers";
+import { ApiKeyMiddleware, MulterMiddleware } from "./middlewares";
+import { NotificationController, AuthController, ArticleController } from "./controllers";
+import path from "path";
+import serveIndex from "serve-index";
 
 class App {
     public app: Application;
@@ -29,11 +30,13 @@ class App {
     public plugins(): void {
         // insert plugins here
         this.app.use(bodyParser.json());
-        this.app.use(multer().none());
+        this.app.use(bodyParser.urlencoded({ extended: true }));
+        this.app.use(MulterMiddleware);
         this.app.use(cors());
         this.app.use(morgan("dev"));
         this.app.use(compression());
         this.app.use(helmet());
+        this.app.use("/storage", express.static(path.join(__dirname, "public/uploads")), serveIndex(path.join(__dirname, "public/uploads"), { icons: true }));
     }
 
     public middlewares(): void {
@@ -45,6 +48,7 @@ class App {
         // insert routes here
         this.app.use("/", AuthController);
         this.app.use("/notifications", NotificationController);
+        this.app.use("/articles", ArticleController);
 
         // dont change this route (for unknown route, send 404 response)
         this.app.all("*", (req: Request, res: Response) => {
