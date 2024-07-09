@@ -15,7 +15,7 @@
 -   Helmet
 -   Morgan
 -   Multer
--   Nodemon
+-   TS-Node-Dev
 
 ORM using Prisma & PostgreSQL
 

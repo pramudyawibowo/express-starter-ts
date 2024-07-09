@@ -4,14 +4,15 @@
     "description": "Express JS Starter with TypeScript",
     "main": "./build/index.js",
     "scripts": {
+        "dev": "ts-node-dev --respawn --transpile-only ./src/app.ts",
         "build": "tsc",
-        "dev": "nodemon ./build/app.js",
         "start": "node ./build/app.js",
         "watch": "tsc -p tsconfig.json --watch",
         "migrate:create": "prisma migrate dev --create-only",
         "migrate": "prisma migrate dev",
         "migrate:prod": "prisma migrate deploy",
         "migrate:reset": "prisma migrate reset --force",
+        "seed": "tsx ./prisma/seeders/DatabaseSeeder.ts",
         "prettier": "prettier --write ."
     },
     "keywords": [],
@@ -34,6 +35,7 @@
         "prisma": "^5.15.1",
         "serve-index": "^1.9.1",
         "slug": "^9.1.0",
+        "tsc": "^2.0.4",
         "typescript": "^5.4.5",
         "uuid": "^10.0.0"
     },
@@ -55,8 +57,9 @@
         "eslint": "^9.5.0",
         "globals": "^15.6.0",
         "husky": "^9.0.11",
-        "nodemon": "^3.1.4",
         "prettier": "3.2.5",
+        "ts-node-dev": "^2.0.0",
+        "tsx": "^4.16.2",
         "typescript-eslint": "^7.13.1"
     }
 }
