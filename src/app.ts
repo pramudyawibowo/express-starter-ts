@@ -8,7 +8,6 @@ import helmet from "helmet";
 import http from "http";
 import bodyParser from "body-parser";
 import path from "path";
-import serveIndex from "serve-index";
 
 import { ApiKeyMiddleware, MulterMiddleware } from "./middlewares";
 import { NotificationController, AuthController, ArticleController } from "./controllers";
@@ -33,14 +32,15 @@ class App {
         this.app.use(bodyParser.urlencoded({ extended: true }));
         this.app.use(MulterMiddleware);
         this.app.use(cors());
-        this.app.use(morgan("dev"));
+        this.app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
         this.app.use(compression());
-        this.app.use(helmet());
         this.app.use(
-            "/storage",
-            express.static(path.join(__dirname, "public/uploads")),
-            serveIndex(path.join(__dirname, "public/uploads"), { icons: true })
+            helmet({
+                crossOriginResourcePolicy: false,
+                crossOriginEmbedderPolicy: false,
+            })
         );
+        this.app.use("/storage", express.static(path.join(__dirname, "public/uploads")));
     }
 
     public middlewares(): void {
