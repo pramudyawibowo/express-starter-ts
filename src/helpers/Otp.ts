@@ -1,7 +1,5 @@
-import "dotenv/config";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../helpers/Prisma";
 
-const prisma = new PrismaClient();
 const otpExpiredTime = parseInt(process.env.OTP_EXPIRED_TIME || "5");
 const otpTryDailyLimit = parseInt(process.env.OTP_TRY_DAILY_LIMIT || "5");
 const otpThrottleLimit = parseInt(process.env.OTP_THROTTLE_LIMIT || "1");
@@ -12,7 +10,7 @@ export const generateOtp = (): string => {
         .padStart(6, "0");
 };
 
-export const checkThrottle = async (phonenumber: string, type: string): Promise<boolean> => {
+export const checkThrottle = async (phonenumber: string, type: string): Promise<{ throttling: boolean; remaining: number }> => {
     const otpData = await prisma.otp.findFirst({
         where: {
             user: {
@@ -21,14 +19,17 @@ export const checkThrottle = async (phonenumber: string, type: string): Promise<
             type: type,
         },
         orderBy: {
-            createdAt: "desc",
+            created_at: "desc",
         },
     });
-    if (!otpData) return true;
+    if (!otpData) return { throttling: false, remaining: 0 };
 
-    if ((new Date().getTime() - new Date(otpData.createdAt).getTime()) / 60000 < otpThrottleLimit) return true;
+    const timeSinceLastOtp = (new Date().getTime() - new Date(otpData.created_at).getTime()) / 1000;
+    if (timeSinceLastOtp < otpThrottleLimit * 60) {
+        return { throttling: true, remaining: otpThrottleLimit * 60 - Math.floor(timeSinceLastOtp) };
+    }
 
-    return false;
+    return { throttling: false, remaining: 0 };
 };
 
 export const checkDailyLimit = async (phonenumber: string, type: string): Promise<boolean> => {
@@ -38,7 +39,7 @@ export const checkDailyLimit = async (phonenumber: string, type: string): Promis
                 phonenumber,
             },
             type: type,
-            createdAt: {
+            created_at: {
                 gte: new Date(new Date().setHours(0, 0, 0, 0)),
             },
         },
@@ -75,10 +76,10 @@ export const sendOtp = async (phonenumber: string, otp: string, type: string) =>
     console.log(`Sending OTP to ${phonenumber}: ${otp}`);
 };
 
-export const verifyOtp = async (userId: any, type: string, inputOtp: string): Promise<boolean> => {
+export const verifyOtp = async (user_id: any, type: string, inputOtp: string): Promise<boolean> => {
     const otpData = await prisma.otp.findFirst({
         where: {
-            userId: userId,
+            user_id: user_id,
             otp: inputOtp,
             type: type,
         },
@@ -86,7 +87,7 @@ export const verifyOtp = async (userId: any, type: string, inputOtp: string): Pr
 
     if (!otpData) throw new Error("Unauthorized");
 
-    if ((new Date().getTime() - new Date(otpData.createdAt).getTime()) / 60000 > otpExpiredTime) {
+    if ((new Date().getTime() - new Date(otpData.created_at).getTime()) / 60000 > otpExpiredTime) {
         throw new Error("OTP Expired");
     }
 

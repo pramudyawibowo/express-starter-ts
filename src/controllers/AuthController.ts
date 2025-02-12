@@ -1,16 +1,15 @@
-import { PrismaClient } from "@prisma/client";
 import Controller from "./Controller";
 import type { Request, Response } from "express";
 import { Router } from "express";
-import { body, validationResult } from "express-validator";
-import { hashPassword, comparePassword } from "../helpers/Bcrypt";
+import { hashPassword } from "../helpers/Bcrypt";
 import { formatPhonenumber } from "../helpers/Formatter";
 import { getRefreshToken, getAccessToken, verifyRefreshToken } from "../helpers/Jwt";
 import { generateOtp, sendOtp, verifyOtp, checkThrottle, checkDailyLimit } from "../helpers/Otp";
 import { AuthMiddleware } from "../middlewares";
 import { UserResource } from "../resources";
-
-const prisma = new PrismaClient();
+import { prisma } from "../helpers/Prisma";
+import Joi from "joi";
+import { joiValidate } from "../helpers/Joi";
 
 class AuthController extends Controller {
     private router: Router;
@@ -26,37 +25,38 @@ class AuthController extends Controller {
     }
 
     public routes(): void {
-        this.router.post("/register", this.validateRegister, this.register);
-        this.router.post("/login", this.validateLogin, this.login);
-        this.router.post("/verify-otp", this.validateVerifyOtp, this.verifyOtp);
+        this.router.post("/register", this.register);
+        this.router.post("/login", this.login);
+        this.router.post("/verify-otp", this.verifyOtp);
         this.router.post("/logout", AuthMiddleware, this.logout);
         this.router.post("/refresh", this.refreshAccessToken);
     }
 
-    private validateRegister = [
-        body("name", "Name is required").notEmpty(),
-        body("phonenumber", "Phonenumber is required").notEmpty(),
-        body("phonenumber").custom(async (value) => {
-            const user = await prisma.user.findFirst({
-                where: {
-                    phonenumber: formatPhonenumber(value),
-                },
-            });
-            if (user) return Promise.reject("Phone number already exists");
-        }),
-        body("password", "Password is required").notEmpty(),
-    ];
     public async register(req: Request, res: Response): Promise<Response> {
         try {
-            const errors = validationResult(req);
-            if (!errors.isEmpty()) return super.badRequest(res, "invalid request", errors.array());
+            const validationErrors = await joiValidate(
+                Joi.object({
+                    name: Joi.string().required(),
+                    phonenumber: Joi.string().required(),
+                }),
+                req
+            );
+            if (validationErrors) return super.badRequest(res, "Bad Request", validationErrors);
 
-            const { name, phonenumber, password } = req.body;
+            const { name, phonenumber } = req.body;
+
+            const userExists = await prisma.user.findFirst({
+                where: {
+                    phonenumber: formatPhonenumber(phonenumber),
+                },
+            });
+            if (userExists) return super.badRequest(res, "Nomor telepon sudah terdaftar");
+
             const user = await prisma.user.create({
                 data: {
                     name: name,
                     phonenumber: formatPhonenumber(phonenumber),
-                    password: await hashPassword(password),
+                    password: await hashPassword("12345678"),
                 },
             });
 
@@ -70,27 +70,28 @@ class AuthController extends Controller {
         }
     }
 
-    private validateLogin = [
-        body("phonenumber", "Phonenumber is required").notEmpty(),
-        body("password", "Password is required").notEmpty(),
-    ];
     public async login(req: Request, res: Response): Promise<Response> {
         try {
-            const errors = validationResult(req);
-            if (!errors.isEmpty()) return super.badRequest(res, "invalid request", errors.array());
+            const validationErrors = await joiValidate(
+                Joi.object({
+                    phonenumber: Joi.string().required(),
+                }),
+                req
+            );
+            if (validationErrors) return super.badRequest(res, "Bad Request", validationErrors);
 
-            const { phonenumber, password } = req.body;
+            const { phonenumber } = req.body;
             const user = await prisma.user.findFirst({
                 where: {
                     phonenumber: formatPhonenumber(phonenumber),
                 },
             });
             if (!user) return super.notFound(res, "User Not Found");
-            if (!(await comparePassword(password, user.password))) return super.unauthorized(res, "Unauthorized");
 
-            if (await checkDailyLimit(user.phonenumber, "login"))
-                return super.badRequest(res, "Batas percobaan harian telah tercapai");
-            if (await checkThrottle(user.phonenumber, "login")) return super.badRequest(res, "Coba lagi dalam 1 menit");
+            if (await checkDailyLimit(user.phonenumber, "login")) return super.badRequest(res, "Batas percobaan harian telah tercapai");
+
+            const { throttling, remaining } = await checkThrottle(user.phonenumber, "login");
+            if (throttling) return super.badRequest(res, `Batas percobaan telah tercapai, silahkan coba lagi dalam ${remaining} detik`);
 
             const otp = generateOtp();
             sendOtp(user.phonenumber, otp, "login");
@@ -102,14 +103,16 @@ class AuthController extends Controller {
         }
     }
 
-    private validateVerifyOtp = [
-        body("phonenumber", "Phonenumber is required").notEmpty(),
-        body("otp", "OTP is required").notEmpty(),
-    ];
     public async verifyOtp(req: Request, res: Response): Promise<Response> {
         try {
-            const errors = validationResult(req);
-            if (!errors.isEmpty()) return super.badRequest(res, "invalid request", errors.array());
+            const validationErrors = await joiValidate(
+                Joi.object({
+                    phonenumber: Joi.string().required(),
+                    otp: Joi.string().required(),
+                }),
+                req
+            );
+            if (validationErrors) return super.badRequest(res, "Bad Request", validationErrors);
 
             const { phonenumber, otp } = req.body;
 
@@ -157,7 +160,7 @@ class AuthController extends Controller {
             const { user, token } = req.body;
             const dbtoken = await prisma.token.findFirst({
                 where: {
-                    userId: user.id,
+                    user_id: user.id,
                     accessToken: token,
                 },
             });
@@ -190,7 +193,7 @@ class AuthController extends Controller {
 
             const dbtoken = await prisma.token.findFirst({
                 where: {
-                    userId: user.id,
+                    user_id: user.id,
                     refreshToken: refreshToken,
                 },
             });

@@ -2,10 +2,8 @@ import Controller from "./Controller";
 import type { Request, Response } from "express";
 import { Router } from "express";
 import { body, validationResult } from "express-validator";
-import { PrismaClient } from "@prisma/client";
 import NotificationResource from "../resources/NotificationResource";
-
-const prisma = new PrismaClient();
+import { prisma } from "../helpers/Prisma";
 
 class NotificationController extends Controller {
     private router: Router;
@@ -58,10 +56,7 @@ class NotificationController extends Controller {
         }
     }
 
-    private validateStore = [
-        body("title", "title is required").notEmpty(),
-        body("message", "message is required").notEmpty(),
-    ];
+    private validateStore = [body("title", "title is required").notEmpty(), body("message", "message is required").notEmpty()];
     public async store(req: Request, res: Response): Promise<Response> {
         try {
             const errors = validationResult(req);

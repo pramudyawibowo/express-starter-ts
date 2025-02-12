@@ -18,7 +18,7 @@ export default class ArticleResource {
             title: article.title,
             content: article.content,
             images: article.images ? new ArticleImageResource().collection(article.images) : [],
-            createdAt: article.createdAt,
+            created_at: article.created_at,
         };
     }
 }

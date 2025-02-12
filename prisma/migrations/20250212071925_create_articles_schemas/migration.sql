@@ -1,11 +1,12 @@
 -- CreateTable
 CREATE TABLE "articles" (
     "id" SERIAL NOT NULL,
+    "uuid" UUID NOT NULL,
     "slug" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "content" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "articles_pkey" PRIMARY KEY ("id")
 );
@@ -15,11 +16,14 @@ CREATE TABLE "article_images" (
     "id" SERIAL NOT NULL,
     "articleId" INTEGER NOT NULL,
     "path" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "article_images_pkey" PRIMARY KEY ("id")
 );
+
+-- CreateIndex
+CREATE UNIQUE INDEX "articles_uuid_key" ON "articles"("uuid");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "articles_slug_key" ON "articles"("slug");

@@ -1,15 +1,13 @@
 import type { Request, Response } from "express";
 import { Router } from "express";
 import Controller from "./Controller";
-import { PrismaClient } from "@prisma/client";
 import { ArticleResource } from "../resources";
 import { body, validationResult } from "express-validator";
-import saveFile from "../helpers/File";
+import { saveFile } from "../helpers/File";
 import slug from "slug";
 import path from "path";
 import fs from "fs";
-
-const prisma = new PrismaClient();
+import { prisma } from "../helpers/Prisma";
 
 class ArticleController extends Controller {
     private router: Router;
@@ -68,10 +66,7 @@ class ArticleController extends Controller {
         }
     }
 
-    private validateStore = [
-        body("title", "title is required").notEmpty(),
-        body("content", "content is required").notEmpty(),
-    ];
+    private validateStore = [body("title", "title is required").notEmpty(), body("content", "content is required").notEmpty()];
     private async store(req: Request, res: Response) {
         try {
             const errors = validationResult(req);

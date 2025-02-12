@@ -14,23 +14,25 @@ datasource db {
 }
 
 model Notification {
-  id        Int      @id @default(autoincrement())
-  title     String
-  message   String
-  json      Json?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
+  id         Int      @id @default(autoincrement())
+  uuid       String   @unique @default(uuid()) @db.Uuid
+  title      String
+  message    String
+  json       Json?
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
 
   @@map("notifications")
 }
 
 model User {
   id          Int      @id @default(autoincrement())
+  uuid        String   @unique @default(uuid()) @db.Uuid
   name        String
-  phonenumber String
+  phonenumber String   @unique
   password    String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now())
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
 
   otps   Otp[]
   Tokens Token[]
@@ -39,40 +41,41 @@ model User {
 }
 
 model Otp {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  otp       String
-  type      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  otp        String
+  type       String
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id])
+  user User @relation(fields: [user_id], references: [id])
 
-  @@index([userId])
+  @@index([user_id])
   @@map("otps")
 }
 
 model Token {
   id           Int      @id @default(autoincrement())
-  userId       Int
+  user_id      Int
   accessToken  String
   refreshToken String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @default(now())
+  created_at   DateTime @default(now())
+  updated_at   DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id])
+  user User @relation(fields: [user_id], references: [id])
 
-  @@index([userId])
+  @@index([user_id])
   @@map("tokens")
 }
 
 model Article {
-  id        Int      @id @default(autoincrement())
-  slug      String   @unique
-  title     String   @db.Text
-  content   String   @db.Text
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
+  id         Int      @id @default(autoincrement())
+  uuid       String   @unique @default(uuid()) @db.Uuid
+  slug       String   @unique
+  title      String   @db.Text
+  content    String   @db.Text
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
 
   images ArticleImage[]
 
@@ -80,11 +83,11 @@ model Article {
 }
 
 model ArticleImage {
-  id        Int      @id @default(autoincrement())
-  articleId Int
-  path      String   @db.Text
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
+  id         Int      @id @default(autoincrement())
+  articleId  Int
+  path       String   @db.Text
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
 
   article Article @relation(fields: [articleId], references: [id])
 

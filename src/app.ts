@@ -2,14 +2,16 @@ import "dotenv/config";
 import express from "express";
 import type { Application, Request, Response } from "express";
 import cors from "cors";
-import morgan from "morgan";
 import compression from "compression";
 import helmet from "helmet";
 import http from "http";
 import bodyParser from "body-parser";
 import path from "path";
 
-import { ApiKeyMiddleware, MulterMiddleware } from "./middlewares";
+import { startCrons } from "./helpers/Crons";
+import { prisma } from "./helpers/Prisma";
+import { errsole, initializeErrsole } from "./helpers/Errsole";
+import { ApiKeyMiddleware, MulterMiddleware, MorganMiddleware } from "./middlewares";
 import { NotificationController, AuthController, ArticleController } from "./controllers";
 
 class App {
@@ -21,18 +23,18 @@ class App {
         this.app = express();
         this.server = http.createServer(this.app);
         this.port = port;
-        this.plugins();
         this.middlewares();
         this.routes();
     }
 
-    public plugins(): void {
-        // insert plugins here
+    public middlewares(): void {
+        // insert middleware here
+        this.app.use("/errsole", errsole.expressProxyMiddleware());
+        this.app.use(MorganMiddleware);
         this.app.use(bodyParser.json());
         this.app.use(bodyParser.urlencoded({ extended: true }));
         this.app.use(MulterMiddleware);
         this.app.use(cors());
-        this.app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
         this.app.use(compression());
         this.app.use(
             helmet({
@@ -40,11 +42,7 @@ class App {
                 crossOriginEmbedderPolicy: false,
             })
         );
-        this.app.use("/storage", express.static(path.join(__dirname, "public/uploads")));
-    }
-
-    public middlewares(): void {
-        // insert middleware here
+        this.app.use("/storage", express.static(process.env.STORAGE_PATH || path.join(__dirname, "public/storage/media")));
         this.app.use(ApiKeyMiddleware);
     }
 
@@ -66,7 +64,10 @@ class App {
 
     public listen(): void {
         this.server.listen(this.port, () => {
-            console.log(`App listening on the http://localhost:${this.port}`);
+            console.log(`App running on port :${this.port}`);
+            prisma.$connect();
+            startCrons();
+            initializeErrsole();
         });
     }
 }
