@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,6 +5,53 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model errsole_config {
+  id    BigInt @id @default(autoincrement())
+  key   String @unique @db.VarChar(255)
+  value String
+}
+
+model errsole_logs_v2 {
+  id         BigInt    @id @default(autoincrement())
+  hostname   String?   @db.VarChar(255)
+  pid        Int?
+  source     String?   @db.VarChar(255)
+  timestamp  DateTime? @default(now()) @db.Timestamptz(6)
+  level      String?   @default("info") @db.VarChar(255)
+  message    String?
+  meta       String?
+  errsole_id BigInt?
+
+  @@index([hostname, pid, id])
+  @@index([source, level, id])
+  @@index([source, level, timestamp])
+  @@index([errsole_id], map: "idx_errsole_id")
+  @@ignore
+}
+
+model errsole_notifications {
+  id             BigInt    @id @default(autoincrement())
+  errsole_id     BigInt?
+  hostname       String?   @db.VarChar(255)
+  hashed_message String?   @db.VarChar(255)
+  created_at     DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime? @default(now()) @db.Timestamptz(6)
+
+  @@index([created_at], map: "idx_errsole_notifications_created_at")
+  @@index([hostname, hashed_message, created_at], map: "idx_errsole_notifications_host_hashed_created")
+  @@ignore
+}
+
+model errsole_users {
+  id              BigInt  @id @default(autoincrement())
+  name            String? @db.VarChar(255)
+  email           String  @unique @db.VarChar(255)
+  hashed_password String  @db.VarChar(255)
+  role            String  @db.VarChar(255)
+
+  @@ignore
 }
 
 model Notification {
@@ -33,9 +74,8 @@ model User {
   password    String
   created_at  DateTime @default(now())
   updated_at  DateTime @default(now())
-
-  otps   Otp[]
-  Tokens Token[]
+  otps        Otp[]
+  Tokens      Token[]
 
   @@map("users")
 }
@@ -47,8 +87,7 @@ model Otp {
   type       String
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
-
-  user User @relation(fields: [user_id], references: [id])
+  user       User     @relation(fields: [user_id], references: [id])
 
   @@index([user_id])
   @@map("otps")
@@ -61,23 +100,21 @@ model Token {
   refreshToken String
   created_at   DateTime @default(now())
   updated_at   DateTime @default(now())
-
-  user User @relation(fields: [user_id], references: [id])
+  user         User     @relation(fields: [user_id], references: [id])
 
   @@index([user_id])
   @@map("tokens")
 }
 
 model Article {
-  id         Int      @id @default(autoincrement())
-  uuid       String   @unique @default(uuid()) @db.Uuid
-  slug       String   @unique
-  title      String   @db.Text
-  content    String   @db.Text
-  created_at DateTime @default(now())
-  updated_at DateTime @default(now())
-
-  images ArticleImage[]
+  id         Int            @id @default(autoincrement())
+  uuid       String         @unique @default(uuid()) @db.Uuid
+  slug       String         @unique
+  title      String
+  content    String
+  created_at DateTime       @default(now())
+  updated_at DateTime       @default(now())
+  images     ArticleImage[]
 
   @@map("articles")
 }
@@ -85,11 +122,10 @@ model Article {
 model ArticleImage {
   id         Int      @id @default(autoincrement())
   articleId  Int
-  path       String   @db.Text
+  path       String
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
-
-  article Article @relation(fields: [articleId], references: [id])
+  article    Article  @relation(fields: [articleId], references: [id])
 
   @@index([articleId])
   @@map("article_images")
