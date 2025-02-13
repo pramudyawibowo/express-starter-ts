@@ -2,12 +2,12 @@ import type { Request, Response } from "express";
 import { Router } from "express";
 import Controller from "./Controller";
 import { ArticleResource } from "@resources/index";
-import { body, validationResult } from "express-validator";
-import { saveFile } from "@helpers/File";
+import { deleteFile, saveFile } from "@helpers/File";
 import slug from "slug";
-import path from "path";
-import fs from "fs";
+import { validate as uuidValidate } from "uuid";
 import { prisma } from "@helpers/Prisma";
+import { joiValidate } from "@helpers/Joi";
+import Joi from "joi";
 
 class ArticleController extends Controller {
     private router: Router;
@@ -24,21 +24,42 @@ class ArticleController extends Controller {
 
     private routes(): void {
         this.router.get("/", this.index);
-        this.router.get("/:slug", this.show);
-        this.router.post("/", this.validateStore, this.store);
-        this.router.put("/:id", this.update);
-        this.router.delete("/:id", this.destroy);
+        this.router.get("/:parameter", this.show);
+        this.router.post("/", this.store);
+        this.router.put("/:parameter", this.update);
+        this.router.delete("/:parameter", this.destroy);
     }
 
     private async index(req: Request, res: Response) {
         try {
-            const { page = 1, perPage = 10 } = req.query;
+            const { page = 1, perPage = 10, search, all, orderby = "id", order = "desc" } = req.query;
+            const pageNum = parseInt(page.toString()) || 1;
+            const itemsPerPage = parseInt(perPage.toString()) || 10;
+            const searchTerm = search?.toString() || "";
+            const showAll = all === "true" || all === "1";
+
+            const allowedColumns = Object.keys(prisma.article.fields);
+            const orderByColumn = orderby?.toString() || "id";
+            if (!allowedColumns.includes(orderByColumn))
+                return super.badRequest(res, `Invalid orderby parameter. Allowed values: ${allowedColumns.join(", ")}`);
+
+            const orderValue = order?.toString().toLowerCase();
+            if (orderValue !== "asc" && orderValue !== "desc") return super.badRequest(res, "Invalid order parameter. Use 'asc' or 'desc'");
+
             const articles = await prisma.article.findMany({
-                include: {
-                    images: true,
+                include: { images: true },
+                where: {
+                    OR: [{ title: { contains: searchTerm, mode: "insensitive" } }, { content: { contains: searchTerm, mode: "insensitive" } }],
                 },
-                skip: page ? (parseInt(page.toString()) - 1) * (perPage ? parseInt(perPage.toString()) : 10) : 0,
-                take: perPage ? parseInt(perPage.toString()) : 10,
+                ...(showAll
+                    ? {}
+                    : {
+                          skip: (pageNum - 1) * itemsPerPage,
+                          take: itemsPerPage,
+                      }),
+                orderBy: {
+                    [orderByColumn.toString()]: orderValue,
+                },
             });
             return super.success(res, "success", new ArticleResource().collection(articles));
         } catch (error: any) {
@@ -49,13 +70,18 @@ class ArticleController extends Controller {
 
     private async show(req: Request, res: Response) {
         try {
-            const { slug } = req.params;
-            const article = await prisma.article.findUnique({
+            const { parameter } = req.params;
+            const isValidUUID = uuidValidate(parameter);
+            const article = await prisma.article.findFirst({
                 include: {
                     images: true,
                 },
                 where: {
-                    slug: slug.toString(),
+                    OR: [
+                        { id: isNaN(+parameter) ? undefined : +parameter },
+                        { slug: parameter },
+                        { uuid: isValidUUID ? parameter : undefined },
+                    ].filter((condition) => Object.values(condition)[0] !== undefined),
                 },
             });
             if (!article) return super.notFound(res, "Not Found");
@@ -66,13 +92,23 @@ class ArticleController extends Controller {
         }
     }
 
-    private validateStore = [body("title", "title is required").notEmpty(), body("content", "content is required").notEmpty()];
     private async store(req: Request, res: Response) {
         try {
-            const errors = validationResult(req);
-            if (!errors.isEmpty()) return super.badRequest(res, "invalid request", errors.array());
-
-            if (!req.files) return super.error(res, "Please upload a file");
+            const validationErrors = await joiValidate(
+                Joi.object({
+                    title: Joi.string().required(),
+                    content: Joi.string().required(),
+                    image: Joi.object().optional().messages({
+                        "object.base": "image harus berupa file",
+                    }),
+                    images: Joi.array().items(Joi.object()).optional().messages({
+                        "array.base": "images harus berupa array",
+                        "array.unique": "images tidak boleh memiliki elemen duplikat",
+                    }),
+                }),
+                req
+            );
+            if (validationErrors) return super.badRequest(res, "Bad Request", validationErrors);
 
             const files = req.files as Express.Multer.File[];
             const images = await Promise.all(
@@ -129,16 +165,34 @@ class ArticleController extends Controller {
 
     private async update(req: Request, res: Response) {
         try {
-            const { id } = req.params;
+            const { parameter } = req.params;
             const { title, content } = req.body;
+
+            const isValidUUID = uuidValidate(parameter);
+            const existingArticle = await prisma.article.findFirst({
+                where: {
+                    OR: [
+                        { id: isNaN(+parameter) ? undefined : +parameter },
+                        { slug: parameter },
+                        { uuid: isValidUUID ? parameter : undefined },
+                    ].filter((condition) => Object.values(condition)[0] !== undefined),
+                },
+            });
+
+            if (!existingArticle) return super.notFound(res, "Not Found");
+
+            const updateData: { title?: string; content?: string } = {};
+            if (title) updateData.title = title.toString();
+            if (content) updateData.content = content.toString();
+
             const article = await prisma.article.update({
                 where: {
-                    id: parseInt(id),
+                    id: existingArticle.id,
                 },
-                data: {
-                    title: title.toString(),
-                    content: content.toString(),
-                },
+                data: updateData,
+                include: {
+                    images: true,
+                }
             });
 
             return super.success(res, "success", new ArticleResource().get(article));
@@ -150,23 +204,39 @@ class ArticleController extends Controller {
 
     private async destroy(req: Request, res: Response) {
         try {
-            const { id } = req.params;
-            const article = await prisma.article.findUnique({
+            const { parameter } = req.params;
+            const isValidUUID = uuidValidate(parameter);
+            const article = await prisma.article.findFirst({
                 where: {
-                    id: parseInt(id),
+                    OR: [
+                        { id: isNaN(+parameter) ? undefined : +parameter },
+                        { slug: parameter },
+                        { uuid: isValidUUID ? parameter : undefined },
+                    ].filter((condition) => Object.values(condition)[0] !== undefined),
                 },
                 include: {
                     images: true,
                 },
             });
+            if (!article) return super.notFound(res, "Not Found");
 
             if (!article) return super.notFound(res, "Not Found");
             if (article.images.length > 0) {
                 article.images.forEach(async (image) => {
-                    const imagePath = path.join(__dirname, "../public/uploads", image.path);
-                    if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
+                    deleteFile(image.path);
                 });
             }
+
+            await prisma.articleImage.deleteMany({
+                where: {
+                    articleId: article.id,
+                },
+            });
+            await prisma.article.delete({
+                where: {
+                    id: article.id,
+                },
+            });
 
             return super.success(res, "success");
         } catch (error: any) {

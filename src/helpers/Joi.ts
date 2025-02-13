@@ -56,6 +56,7 @@ const translationMap: { [key: string]: string } = {
 
     // Object Specific
     "object.base": "harus berupa objek",
+    "object.unknown": "tidak boleh memiliki properti tambahan",
 
     // Custom Error Messages
     "any.invalid": "nilai tidak valid",

@@ -14,6 +14,7 @@ export default class ArticleResource {
     transform(article: any): object {
         return {
             id: article.id,
+            uuid: article.uuid,
             slug: article.slug,
             title: article.title,
             content: article.content,

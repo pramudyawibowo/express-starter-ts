@@ -14,7 +14,7 @@ export default class ArticleImageResource {
     transform(article: ArticleImage): object {
         return {
             id: article.id,
-            articleId: article.articleId,
+            article_id: article.articleId,
             url: process.env.APP_URL + "/storage/" + article.path,
         };
     }
