@@ -7,7 +7,7 @@
         "dev": "ts-node-dev -r tsconfig-paths/register --respawn --rs ./src/app.ts",
         "build": "tsc",
         "postbuild": "tsx ./src/commands/SymbolicLink.ts",
-        "start": "node ./build/app.js",
+        "start": "node -r ts-node/register/transpile-only -r tsconfig-paths/register ./build/app.js",
         "watch": "tsc -p tsconfig.json --watch",
         "migrate:create": "prisma migrate dev --create-only",
         "migrate": "prisma migrate dev",
@@ -41,6 +41,7 @@
         "prisma": "^5.21.0",
         "slug": "^9.1.0",
         "socket.io": "^4.8.1",
+        "ts-node": "^10.9.2",
         "tsx": "^4.16.2",
         "typescript": "^5.5.4",
         "uuid": "^10.0.0"
