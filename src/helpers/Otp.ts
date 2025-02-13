@@ -1,4 +1,4 @@
-import { prisma } from "../helpers/Prisma";
+import { prisma } from "@helpers/Prisma";
 
 const otpExpiredTime = parseInt(process.env.OTP_EXPIRED_TIME || "5");
 const otpTryDailyLimit = parseInt(process.env.OTP_TRY_DAILY_LIMIT || "5");

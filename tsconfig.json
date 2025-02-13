@@ -4,7 +4,13 @@
         "module": "CommonJS",
         "rootDir": "./src",
         "baseUrl": "./src",
-        "paths": {},
+        "paths": {
+            "@controllers/*": ["controllers/*"],
+            "@helpers/*": ["helpers/*"],
+            "@middlewares/*": ["middlewares/*"],
+            "@resources/*": ["resources/*"],
+            "@services/*": ["services/*"]
+        },
         "outDir": "./build",
         "esModuleInterop": true,
         "forceConsistentCasingInFileNames": true,
@@ -14,7 +20,7 @@
         "emitDecoratorMetadata": true,
         "moduleResolution": "node",
         "resolveJsonModule": true,
-        "removeComments": true,
+        "removeComments": true
     },
     "include": ["src"],
     "exclude": ["node_modules", "build"]

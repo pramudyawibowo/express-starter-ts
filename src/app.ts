@@ -8,11 +8,12 @@ import http from "http";
 import bodyParser from "body-parser";
 import path from "path";
 
-import { startCrons } from "./helpers/Crons";
-import { prisma } from "./helpers/Prisma";
-import { errsole, initializeErrsole } from "./helpers/Errsole";
-import { ApiKeyMiddleware, MulterMiddleware, MorganMiddleware } from "./middlewares";
-import { NotificationController, AuthController, ArticleController } from "./controllers";
+import { startCrons } from "@services/Crons";
+import { prisma } from "@helpers/Prisma";
+import { errsole, initializeErrsole } from "@services/Errsole";
+import { SocketService } from "@services/Socket";
+import { ApiKeyMiddleware, MulterMiddleware, MorganMiddleware } from "@middlewares/index";
+import { NotificationController, AuthController, ArticleController } from "@controllers/index";
 
 class App {
     public app: Application;
@@ -68,6 +69,7 @@ class App {
             prisma.$connect();
             startCrons();
             initializeErrsole();
+            new SocketService(this.server);
         });
     }
 }

@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import { verifyAccessToken } from "../helpers/Jwt";
+import { verifyAccessToken } from "@helpers/Jwt";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();

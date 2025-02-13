@@ -1,15 +1,15 @@
 import Controller from "./Controller";
 import type { Request, Response } from "express";
 import { Router } from "express";
-import { hashPassword } from "../helpers/Bcrypt";
-import { formatPhonenumber } from "../helpers/Formatter";
-import { getRefreshToken, getAccessToken, verifyRefreshToken } from "../helpers/Jwt";
-import { generateOtp, sendOtp, verifyOtp, checkThrottle, checkDailyLimit } from "../helpers/Otp";
+import { hashPassword } from "@helpers/Bcrypt";
+import { formatPhonenumber } from "@helpers/Formatter";
+import { getRefreshToken, getAccessToken, verifyRefreshToken } from "@helpers/Jwt";
+import { generateOtp, sendOtp, verifyOtp, checkThrottle, checkDailyLimit } from "@helpers/Otp";
 import { AuthMiddleware } from "../middlewares";
-import { UserResource } from "../resources";
-import { prisma } from "../helpers/Prisma";
+import { UserResource } from "@resources/index";
+import { prisma } from "@helpers/Prisma";
 import Joi from "joi";
-import { joiValidate } from "../helpers/Joi";
+import { joiValidate } from "@helpers/Joi";
 
 class AuthController extends Controller {
     private router: Router;

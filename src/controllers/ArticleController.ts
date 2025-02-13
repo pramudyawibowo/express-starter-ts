@@ -1,13 +1,13 @@
 import type { Request, Response } from "express";
 import { Router } from "express";
 import Controller from "./Controller";
-import { ArticleResource } from "../resources";
+import { ArticleResource } from "@resources/index";
 import { body, validationResult } from "express-validator";
-import { saveFile } from "../helpers/File";
+import { saveFile } from "@helpers/File";
 import slug from "slug";
 import path from "path";
 import fs from "fs";
-import { prisma } from "../helpers/Prisma";
+import { prisma } from "@helpers/Prisma";
 
 class ArticleController extends Controller {
     private router: Router;

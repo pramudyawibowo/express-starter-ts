@@ -1,5 +1,5 @@
 import cron from "node-cron";
-import { prisma } from "./Prisma";
+import { prisma } from "@helpers/Prisma";
 
 export const startCrons = () => {
     console.log("Cron started");

@@ -2,8 +2,8 @@ import Controller from "./Controller";
 import type { Request, Response } from "express";
 import { Router } from "express";
 import { body, validationResult } from "express-validator";
-import NotificationResource from "../resources/NotificationResource";
-import { prisma } from "../helpers/Prisma";
+import NotificationResource from "@resources/NotificationResource";
+import { prisma } from "@helpers/Prisma";
 
 class NotificationController extends Controller {
     private router: Router;
