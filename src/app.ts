@@ -69,7 +69,7 @@ class App {
             prisma.$connect();
             startCrons();
             initializeErrsole();
-            new SocketService(this.server);
+            SocketService.init(this.server);
         });
     }
 }

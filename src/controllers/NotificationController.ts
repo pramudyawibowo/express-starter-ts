@@ -4,6 +4,7 @@ import { Router } from "express";
 import { body, validationResult } from "express-validator";
 import NotificationResource from "@resources/NotificationResource";
 import { prisma } from "@helpers/Prisma";
+import { SocketService } from "@services/Socket";
 
 class NotificationController extends Controller {
     private router: Router;
@@ -70,6 +71,10 @@ class NotificationController extends Controller {
                     json: req.body.json ? req.body.json : null,
                 },
             });
+
+            const socket = SocketService.getIO();
+            socket.emit("notification", notification);
+
             return super.success(res, "success", new NotificationResource().get(notification));
         } catch (error: any) {
             console.error(error.message);
