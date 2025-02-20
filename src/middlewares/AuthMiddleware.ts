@@ -1,8 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { verifyAccessToken } from "@helpers/Jwt";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "@helpers/Prisma";
 
 const AuthMiddleware = async (req: Request, res: Response, next: NextFunction) => {
     try {
