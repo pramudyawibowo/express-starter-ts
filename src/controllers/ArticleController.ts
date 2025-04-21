@@ -195,6 +195,36 @@ class ArticleController extends Controller {
                 },
             });
 
+            const files = req.files as Express.Multer.File[];
+            if (files) {
+                const images = await Promise.all(
+                    files.map(async (file) => {
+                        return await saveFile(file, "articles");
+                    })
+                );
+
+                await prisma.articleImage.deleteMany({
+                    where: {
+                        articleId: article.id,
+                    },
+                });
+
+                await prisma.articleImage.createMany({
+                    data: images.map((image) => {
+                        return {
+                            path: image,
+                            articleId: article.id,
+                        };
+                    })
+                });
+                
+                article.images = await prisma.articleImage.findMany({
+                    where: {
+                        articleId: article.id,
+                    },
+                });
+            }
+
             return super.success(res, "success", new ArticleResource().get(article));
         } catch (error: any) {
             console.error(error.message);
