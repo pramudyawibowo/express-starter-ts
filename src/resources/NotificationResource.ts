@@ -1,4 +1,4 @@
-import type { Notification } from "@prisma/client";
+import type { Notification } from '@prisma/client';
 
 export default class NotificationResource {
     collection(notifications: Notification[]): object[] {

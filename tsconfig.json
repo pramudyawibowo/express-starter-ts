@@ -9,7 +9,8 @@
             "@helpers/*": ["helpers/*"],
             "@middlewares/*": ["middlewares/*"],
             "@resources/*": ["resources/*"],
-            "@services/*": ["services/*"]
+            "@services/*": ["services/*"],
+            "@prisma/*": ["../prisma/generated/*"],
         },
         "outDir": "./build",
         "esModuleInterop": true,

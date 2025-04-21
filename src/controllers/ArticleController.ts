@@ -192,7 +192,7 @@ class ArticleController extends Controller {
                 data: updateData,
                 include: {
                     images: true,
-                }
+                },
             });
 
             return super.success(res, "success", new ArticleResource().get(article));

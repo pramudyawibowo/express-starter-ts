@@ -1,19 +1,17 @@
-import "dotenv/config";
 import express from "express";
-import type { Application, Request, Response } from "express";
-import cors from "cors";
-import compression from "compression";
-import helmet from "helmet";
+import type { Application, Request, Response, NextFunction, RequestHandler } from "express";
 import http from "http";
-import bodyParser from "body-parser";
-import path from "path";
-
 import { startCrons } from "@services/Crons";
 import { prisma } from "@helpers/Prisma";
 import { errsole, initializeErrsole } from "@services/Errsole";
 import { SocketService } from "@services/Socket";
 import { ApiKeyMiddleware, MulterMiddleware, MorganMiddleware } from "@middlewares/index";
 import { NotificationController, AuthController, ArticleController } from "@controllers/index";
+import cors from "cors";
+import compression from "compression";
+import helmet from "helmet";
+import path from "path";
+import "dotenv/config";
 
 class App {
     public app: Application;
@@ -32,8 +30,8 @@ class App {
         // insert middleware here
         this.app.use("/errsole", errsole.expressProxyMiddleware());
         this.app.use(MorganMiddleware);
-        this.app.use(bodyParser.json());
-        this.app.use(bodyParser.urlencoded({ extended: true }));
+        this.app.use(express.json());
+        this.app.use(express.urlencoded({ extended: true }));
         this.app.use(MulterMiddleware);
         this.app.use(cors());
         this.app.use(compression());
@@ -53,26 +51,81 @@ class App {
         this.app.use("/notifications", NotificationController);
         this.app.use("/articles", ArticleController);
 
-        // dont change this route (for unknown route, send 404 response)
-        this.app.all("*", (req: Request, res: Response) => {
-            return res.status(404).json({
+        // Handle unknown routes (catch-all route)
+        const notFoundHandler: RequestHandler = (_req: Request, res: Response, _next: NextFunction): void => {
+            res.status(404).json({
                 data: null,
                 message: "Route not found",
                 status: 404,
             });
+        };
+
+        this.app.all("*", notFoundHandler); // Use the function handler directly
+    }
+
+    public async listen(): Promise<void> {
+        this.server.listen(this.port, async () => {
+            console.log(`App running on port: ${this.port}`);
+
+            try {
+                await prisma.$connect();
+                SocketService.init(this.server);
+
+                const isPrimaryInstance =
+                    process.env.NODE_APP_INSTANCE === "0" ||
+                    process.env.PM2_INSTANCE_ID === "0" ||
+                    (process.env.NODE_APP_INSTANCE === undefined && process.env.PM2_INSTANCE_ID === undefined);
+
+                if (isPrimaryInstance) {
+                    console.log("Primary worker instance detected - starting cron jobs");
+                    startCrons();
+                } else {
+                    console.log(`Worker instance ${process.env.NODE_APP_INSTANCE || process.env.PM2_INSTANCE_ID} - skipping cron initialization`);
+                }
+            } catch (err) {
+                console.error("Failed to initialize DB or crons:", err);
+                process.exit(1);
+            }
+        });
+
+        process.on("SIGTERM", this.gracefulShutdown.bind(this));
+        process.on("SIGINT", this.gracefulShutdown.bind(this));
+
+        process.on("uncaughtException", (err) => {
+            console.error("Uncaught Exception:", err);
+            this.gracefulShutdown();
+        });
+
+        process.on("unhandledRejection", (reason) => {
+            console.error("Unhandled Promise Rejection:", reason);
+            this.gracefulShutdown();
         });
     }
 
-    public listen(): void {
-        this.server.listen(this.port, () => {
-            console.log(`App running on port :${this.port}`);
-            prisma.$connect();
-            startCrons();
-            initializeErrsole();
-            SocketService.init(this.server);
-        });
+    private async gracefulShutdown(): Promise<void> {
+        console.log("Gracefully shutting down...");
+
+        const forcedExitTimeout = setTimeout(() => {
+            console.error("Forced shutdown initiated after timeout");
+            process.exit(1);
+        }, 10000); // 10 seconds timeout
+
+        try {
+            await Promise.all([prisma.$disconnect()]);
+
+            this.server.close(() => {
+                console.log("Server closed successfully");
+                clearTimeout(forcedExitTimeout);
+                process.exit(0);
+            });
+        } catch (err) {
+            console.error("Error during shutdown:", err);
+            clearTimeout(forcedExitTimeout);
+            process.exit(1);
+        }
     }
 }
 
-const app = new App(process.env.APP_PORT as unknown as number);
+initializeErrsole();
+const app = new App(Number(process.env.APP_PORT) || 3000); // Fallback to 3000 if APP_PORT is not set
 app.listen();

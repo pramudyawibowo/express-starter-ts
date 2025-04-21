@@ -19,8 +19,6 @@ export class SocketService {
                 console.log("Client disconnected:", socket.id);
             });
         });
-
-        
     }
 
     static getIO(): SocketIOServer {
