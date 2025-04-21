@@ -14,24 +14,6 @@ model errsole_config {
   value String
 }
 
-model errsole_logs_v2 {
-  id         BigInt    @id @default(autoincrement())
-  hostname   String?   @db.VarChar(255)
-  pid        Int?
-  source     String?   @db.VarChar(255)
-  timestamp  DateTime? @default(now()) @db.Timestamptz(6)
-  level      String?   @default("info") @db.VarChar(255)
-  message    String?
-  meta       String?
-  errsole_id BigInt?
-
-  @@index([hostname, pid, id])
-  @@index([source, level, id])
-  @@index([source, level, timestamp])
-  @@index([errsole_id], map: "idx_errsole_id")
-  @@ignore
-}
-
 model errsole_notifications {
   id             BigInt    @id @default(autoincrement())
   errsole_id     BigInt?
@@ -42,6 +24,7 @@ model errsole_notifications {
 
   @@index([created_at], map: "idx_errsole_notifications_created_at")
   @@index([hostname, hashed_message, created_at], map: "idx_errsole_notifications_host_hashed_created")
+  @@index([hostname, hashed_message, created_at], map: "idx_errsole_notifications_hostname_hashed_message_created_at")
   @@ignore
 }
 
@@ -52,6 +35,28 @@ model errsole_users {
   hashed_password String  @db.VarChar(255)
   role            String  @db.VarChar(255)
 
+  @@ignore
+}
+
+model errsole_logs_v3 {
+  id          BigInt                   @id @default(autoincrement())
+  hostname    String?                  @db.VarChar(63)
+  pid         Int?
+  source      String?                  @db.VarChar(31)
+  timestamp   DateTime?                @default(now()) @db.Timestamptz(6)
+  level       String?                  @default("info") @db.VarChar(31)
+  message     String?
+  message_tsv Unsupported("tsvector")? @map("message_tsv")
+  meta        String?
+  errsole_id  BigInt?
+
+  @@index([errsole_id], map: "idx_errsole_logs_v3_errsole_id")
+  @@index([hostname], map: "idx_errsole_logs_v3_hostname")
+  @@index([hostname, source, level, timestamp, id], map: "idx_errsole_logs_v3_hostname_source_level_timestamp_id")
+  @@index([hostname, timestamp, id], map: "idx_errsole_logs_v3_hostname_timestamp_id")
+  @@index([message_tsv], map: "idx_errsole_logs_v3_message_tsv", type: Gin)
+  @@index([source, level, timestamp, id], map: "idx_errsole_logs_v3_source_level_timestamp_id")
+  @@index([timestamp, id], map: "idx_errsole_logs_v3_timestamp_id")
   @@ignore
 }
 
