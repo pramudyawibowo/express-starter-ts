@@ -32,35 +32,28 @@ class ArticleController extends Controller {
 
     private async index(req: Request, res: Response) {
         try {
-            const { page = 1, perPage = 10, search, all, orderby = "id", order = "desc" } = req.query;
-            const pageNum = parseInt(page.toString()) || 1;
-            const itemsPerPage = parseInt(perPage.toString()) || 10;
-            const searchTerm = search?.toString() || "";
-            const showAll = all === "true" || all === "1";
+            const { page = 1, perPage = 10, search = "", all = "false", orderby = "id", order = "desc", category_slug, category_id } = req.query;
 
-            const allowedColumns = Object.keys(prisma.article.fields);
-            const orderByColumn = orderby?.toString() || "id";
-            if (!allowedColumns.includes(orderByColumn))
-                return super.badRequest(res, `Invalid orderby parameter. Allowed values: ${allowedColumns.join(", ")}`);
+            const filters: any = {
+                title: { contains: search.toString(), mode: "insensitive" },
+                content: { contains: search.toString(), mode: "insensitive" },
+            };
 
-            const orderValue = order?.toString().toLowerCase();
-            if (orderValue !== "asc" && orderValue !== "desc") return super.badRequest(res, "Invalid order parameter. Use 'asc' or 'desc'");
+            if (category_slug) {
+                const category = await prisma.articleCategory.findUnique({ where: { slug: category_slug.toString() } });
+                if (!category) return super.notFound(res, "Category not found");
+                filters.category_id = category.id;
+            } else if (category_id) {
+                filters.category_id = +category_id;
+            }
 
             const articles = await prisma.article.findMany({
+                where: filters,
                 include: { images: true },
-                where: {
-                    OR: [{ title: { contains: searchTerm, mode: "insensitive" } }, { content: { contains: searchTerm, mode: "insensitive" } }],
-                },
-                ...(showAll
-                    ? {}
-                    : {
-                          skip: (pageNum - 1) * itemsPerPage,
-                          take: itemsPerPage,
-                      }),
-                orderBy: {
-                    [orderByColumn.toString()]: orderValue,
-                },
+                orderBy: { [orderby.toString()]: order.toString().toLowerCase() },
+                ...(all === "true" ? {} : { skip: (+page - 1) * +perPage, take: +perPage }),
             });
+
             return super.success(res, "success", new ArticleResource().collection(articles));
         } catch (error: any) {
             console.error(error.message);
@@ -71,21 +64,20 @@ class ArticleController extends Controller {
     private async show(req: Request, res: Response) {
         try {
             const { parameter } = req.params;
-            const isValidUUID = uuidValidate(parameter);
             const article = await prisma.article.findFirst({
-                include: {
-                    images: true,
-                },
                 where: {
                     OR: [
                         { id: isNaN(+parameter) ? undefined : +parameter },
                         { slug: parameter },
-                        { uuid: isValidUUID ? parameter : undefined },
-                    ].filter((condition) => Object.values(condition)[0] !== undefined),
+                        { uuid: uuidValidate(parameter) ? parameter : undefined },
+                    ],
                 },
+                include: { images: true },
             });
-            if (!article) return super.notFound(res, "Not Found");
-            return super.success(res, "success", new ArticleResource().get(article));
+
+            if (!article) return super.notFound(res, "Article not found");
+
+            return super.success(res, "Article retrieved successfully", new ArticleResource().get(article));
         } catch (error: any) {
             console.error(error.message);
             return super.error(res, error.message);
@@ -94,69 +86,37 @@ class ArticleController extends Controller {
 
     private async store(req: Request, res: Response) {
         try {
-            const validationErrors = await joiValidate(
+            const { title, content, category_id, user_id } = req.body;
+
+            const validationErrors = await joiValidate(req,
                 Joi.object({
                     title: Joi.string().required(),
                     content: Joi.string().required(),
-                    image: Joi.object().optional().messages({
-                        "object.base": "image harus berupa file",
-                    }),
-                    images: Joi.array().items(Joi.object()).optional().messages({
-                        "array.base": "images harus berupa array",
-                        "array.unique": "images tidak boleh memiliki elemen duplikat",
-                    }),
+                    category_id: Joi.number().required(),
                 }),
-                req
             );
-            if (validationErrors) return super.badRequest(res, "Bad Request", validationErrors);
+            if (validationErrors) return super.badRequest(res, "Validation failed", validationErrors);
+
+            const slugTitle = slug(title, { lower: true });
+            const existingSlug = await prisma.article.findUnique({ where: { slug: slugTitle } });
+            if (existingSlug) return super.badRequest(res, "Title already exists");
 
             const files = req.files as Express.Multer.File[];
-            const images = await Promise.all(
-                files.map(async (file) => {
-                    return await saveFile(file, "articles");
-                })
-            );
+            const images = files ? await Promise.all(files.map((file) => saveFile(file, "articles"))) : [];
 
-            const { title, content } = req.body;
-            const newSlug = slug(title.toString(), { lower: true });
-
-            const checkSlug = await prisma.article.findUnique({
-                include: {
-                    images: true,
-                },
-                where: {
-                    slug: newSlug,
-                },
-            });
-            if (checkSlug) return super.badRequest(res, "title already exists");
-
-            const newArticle = await prisma.article.create({
+            const article = await prisma.article.create({
                 data: {
-                    slug: newSlug,
-                    title: title.toString(),
-                    content: content.toString(),
-                    images: {
-                        createMany: {
-                            data: images.map((image) => {
-                                return {
-                                    path: image,
-                                };
-                            }),
-                        },
-                    },
+                    title,
+                    content,
+                    slug: slugTitle,
+                    category_id: +category_id,
+                    user_id: +req.body.user.id,
+                    images: { createMany: { data: images.map((path) => ({ path })) } },
                 },
+                include: { images: true },
             });
 
-            const article = await prisma.article.findUnique({
-                include: {
-                    images: true,
-                },
-                where: {
-                    id: newArticle.id,
-                },
-            });
-
-            return super.success(res, "success", new ArticleResource().get(article));
+            return super.success(res, "Article created successfully", new ArticleResource().get(article));
         } catch (error: any) {
             console.error(error.message);
             return super.error(res, error.message);
@@ -166,66 +126,40 @@ class ArticleController extends Controller {
     private async update(req: Request, res: Response) {
         try {
             const { parameter } = req.params;
-            const { title, content } = req.body;
+            const { title, content, category_id } = req.body;
 
-            const isValidUUID = uuidValidate(parameter);
-            const existingArticle = await prisma.article.findFirst({
+            const article = await prisma.article.findFirst({
                 where: {
                     OR: [
                         { id: isNaN(+parameter) ? undefined : +parameter },
                         { slug: parameter },
-                        { uuid: isValidUUID ? parameter : undefined },
-                    ].filter((condition) => Object.values(condition)[0] !== undefined),
+                        { uuid: uuidValidate(parameter) ? parameter : undefined },
+                    ],
                 },
             });
 
-            if (!existingArticle) return super.notFound(res, "Not Found");
+            if (!article) return super.notFound(res, "Article not found");
 
-            const updateData: { title?: string; content?: string } = {};
-            if (title) updateData.title = title.toString();
-            if (content) updateData.content = content.toString();
-
-            const article = await prisma.article.update({
-                where: {
-                    id: existingArticle.id,
+            const updatedArticle = await prisma.article.update({
+                where: { id: article.id },
+                data: {
+                    ...(title && { title }),
+                    ...(content && { content }),
+                    ...(category_id && { category_id: +category_id }),
                 },
-                data: updateData,
-                include: {
-                    images: true,
-                },
+                include: { images: true },
             });
 
             const files = req.files as Express.Multer.File[];
             if (files) {
-                const images = await Promise.all(
-                    files.map(async (file) => {
-                        return await saveFile(file, "articles");
-                    })
-                );
-
-                await prisma.articleImage.deleteMany({
-                    where: {
-                        articleId: article.id,
-                    },
-                });
-
+                const images = await Promise.all(files.map((file) => saveFile(file, "articles")));
+                await prisma.articleImage.deleteMany({ where: { articleId: article.id } });
                 await prisma.articleImage.createMany({
-                    data: images.map((image) => {
-                        return {
-                            path: image,
-                            articleId: article.id,
-                        };
-                    })
-                });
-                
-                article.images = await prisma.articleImage.findMany({
-                    where: {
-                        articleId: article.id,
-                    },
+                    data: images.map((path) => ({ path, articleId: article.id })),
                 });
             }
 
-            return super.success(res, "success", new ArticleResource().get(article));
+            return super.success(res, "Article updated successfully", new ArticleResource().get(updatedArticle));
         } catch (error: any) {
             console.error(error.message);
             return super.error(res, error.message);
@@ -235,40 +169,25 @@ class ArticleController extends Controller {
     private async destroy(req: Request, res: Response) {
         try {
             const { parameter } = req.params;
-            const isValidUUID = uuidValidate(parameter);
+
             const article = await prisma.article.findFirst({
                 where: {
                     OR: [
                         { id: isNaN(+parameter) ? undefined : +parameter },
                         { slug: parameter },
-                        { uuid: isValidUUID ? parameter : undefined },
-                    ].filter((condition) => Object.values(condition)[0] !== undefined),
+                        { uuid: uuidValidate(parameter) ? parameter : undefined },
+                    ],
                 },
-                include: {
-                    images: true,
-                },
-            });
-            if (!article) return super.notFound(res, "Not Found");
-
-            if (!article) return super.notFound(res, "Not Found");
-            if (article.images.length > 0) {
-                article.images.forEach(async (image) => {
-                    deleteFile(image.path);
-                });
-            }
-
-            await prisma.articleImage.deleteMany({
-                where: {
-                    articleId: article.id,
-                },
-            });
-            await prisma.article.delete({
-                where: {
-                    id: article.id,
-                },
+                include: { images: true },
             });
 
-            return super.success(res, "success");
+            if (!article) return super.notFound(res, "Article not found");
+
+            await prisma.articleImage.deleteMany({ where: { articleId: article.id } });
+            article.images.forEach((image) => deleteFile(image.path));
+            await prisma.article.delete({ where: { id: article.id } });
+
+            return super.success(res, "Article deleted successfully");
         } catch (error: any) {
             console.error(error.message);
             return super.error(res, error.message);

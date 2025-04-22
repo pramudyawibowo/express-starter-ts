@@ -80,8 +80,10 @@ model User {
   password    String
   created_at  DateTime @default(now())
   updated_at  DateTime @default(now())
-  otps        Otp[]
-  Tokens      Token[]
+
+  otps     Otp[]
+  Tokens   Token[]
+  articles Article[]
 
   @@map("users")
 }
@@ -112,15 +114,35 @@ model Token {
   @@map("tokens")
 }
 
+model ArticleCategory {
+  id         Int      @id @default(autoincrement())
+  uuid       String   @unique @default(uuid()) @db.Uuid
+  name       String   @unique
+  slug       String   @unique
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  articles Article[]
+
+  @@map("article_categories")
+}
+
 model Article {
-  id         Int            @id @default(autoincrement())
-  uuid       String         @unique @default(uuid()) @db.Uuid
-  slug       String         @unique
-  title      String
-  content    String
-  created_at DateTime       @default(now())
-  updated_at DateTime       @default(now())
-  images     ArticleImage[]
+  id          Int      @id @default(autoincrement())
+  uuid        String   @unique @default(uuid()) @db.Uuid
+  user_id     Int
+  category_id Int
+  slug        String   @unique
+  title       String
+  content     String
+  active      Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
+
+  category ArticleCategory @relation(fields: [category_id], references: [id])
+  user     User            @relation(fields: [user_id], references: [id])
+
+  images ArticleImage[]
 
   @@map("articles")
 }
@@ -131,6 +153,7 @@ model ArticleImage {
   path       String
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
+
   article    Article  @relation(fields: [articleId], references: [id])
 
   @@index([articleId])

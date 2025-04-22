@@ -34,12 +34,11 @@ class AuthController extends Controller {
 
     public async register(req: Request, res: Response): Promise<Response> {
         try {
-            const validationErrors = await joiValidate(
+            const validationErrors = await joiValidate(req,
                 Joi.object({
                     name: Joi.string().required(),
                     phonenumber: Joi.string().required(),
                 }),
-                req
             );
             if (validationErrors) return super.badRequest(res, "Bad Request", validationErrors);
 
@@ -72,11 +71,10 @@ class AuthController extends Controller {
 
     public async login(req: Request, res: Response): Promise<Response> {
         try {
-            const validationErrors = await joiValidate(
+            const validationErrors = await joiValidate(req,
                 Joi.object({
                     phonenumber: Joi.string().required(),
                 }),
-                req
             );
             if (validationErrors) return super.badRequest(res, "Bad Request", validationErrors);
 
@@ -105,12 +103,11 @@ class AuthController extends Controller {
 
     public async verifyOtp(req: Request, res: Response): Promise<Response> {
         try {
-            const validationErrors = await joiValidate(
+            const validationErrors = await joiValidate(req,
                 Joi.object({
                     phonenumber: Joi.string().required(),
                     otp: Joi.string().required(),
                 }),
-                req
             );
             if (validationErrors) return super.badRequest(res, "Bad Request", validationErrors);
 

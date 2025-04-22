@@ -84,22 +84,61 @@ const translateErrorMessage = (message: string): string => {
     return translatedMessage;
 };
 
-export const joiValidate = async (schema: Joi.ObjectSchema, data: Request) => {
+export const joiValidate = async (
+    req: Request,
+    schema: Joi.ObjectSchema,
+    dbValidationOptions?: {
+        [key: string]: {
+            prisma: any;
+            model: string;
+            field: string;
+            type: "exists" | "unique";
+            exceptId?: number; // Add exceptId parameter
+        };
+    }
+) => {
     try {
-        if (data.files && data.files.length != 0) {
-            (data.files as Express.Multer.File[]).forEach((field: Express.Multer.File) => {
+        const data = req.method === "GET" ? req.query : req.body;
+
+        if (req.files && req.files.length != 0) {
+            (req.files as Express.Multer.File[]).forEach((field: Express.Multer.File) => {
                 if (field.fieldname.includes("[]")) {
                     const arrayFieldName = field.fieldname.replace("[]", "");
-                    if (!data.body[arrayFieldName]) {
-                        data.body[arrayFieldName] = [];
+                    if (!data[arrayFieldName]) {
+                        data[arrayFieldName] = [];
                     }
-                    data.body[arrayFieldName].push(field);
+                    data[arrayFieldName].push(field);
                 } else {
-                    data.body[field.fieldname] = field;
+                    data[field.fieldname] = field;
                 }
             });
         }
-        await schema.validateAsync(data.body, { abortEarly: false, allowUnknown: true });
+
+        await schema.validateAsync(data, { abortEarly: false, allowUnknown: true });
+
+        if (dbValidationOptions) {
+            const dbErrors: ErrorMessages = {};
+            for (const [key, options] of Object.entries(dbValidationOptions)) {
+                const whereClause: any = { [options.field]: data[key] };
+                
+                // Apply exceptId only if it is provided
+                if (options.type === "unique" && options.exceptId !== undefined) {
+                    whereClause.id = { not: options.exceptId };
+                }
+
+                const record = await options.prisma[options.model].findFirst({ where: whereClause });
+
+                if (options.type === "exists" && !record) {
+                    dbErrors[key] = [`${key} does not exist`];
+                } else if (options.type === "unique" && record) {
+                    dbErrors[key] = [`${key} already exists`];
+                }
+            }
+            if (Object.keys(dbErrors).length > 0) {
+                return dbErrors;
+            }
+        }
+
         return;
     } catch (error) {
         const errorMessages: ErrorMessages = (error as Joi.ValidationError).details.reduce((acc: ErrorMessages, detail: Joi.ValidationErrorItem) => {
@@ -108,7 +147,6 @@ export const joiValidate = async (schema: Joi.ObjectSchema, data: Request) => {
                 if (!acc[fieldName]) {
                     acc[fieldName] = [];
                 }
-                // Translate the error message before pushing it to the result
                 const translatedMessage = translateErrorMessage(detail.message.replace(/"/g, ""));
                 acc[fieldName].push(translatedMessage);
             }

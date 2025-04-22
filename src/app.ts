@@ -5,8 +5,8 @@ import { startCrons } from "@services/Crons";
 import { prisma } from "@helpers/Prisma";
 import { errsole, initializeErrsole } from "@services/Errsole";
 import { SocketService } from "@services/Socket";
-import { ApiKeyMiddleware, MulterMiddleware, MorganMiddleware } from "@middlewares/index";
-import { NotificationController, AuthController, ArticleController } from "@controllers/index";
+import { ApiKeyMiddleware, MulterMiddleware, MorganMiddleware, AuthMiddleware } from "@middlewares/index";
+import { NotificationController, AuthController, ArticleController, ArticleCategoryController } from "@controllers/index";
 import cors from "cors";
 import compression from "compression";
 import helmet from "helmet";
@@ -48,8 +48,9 @@ class App {
     public routes(): void {
         // insert routes here
         this.app.use("/", AuthController);
-        this.app.use("/notifications", NotificationController);
-        this.app.use("/articles", ArticleController);
+        this.app.use("/notifications", AuthMiddleware, NotificationController);
+        this.app.use("/article-categories", AuthMiddleware, ArticleCategoryController);
+        this.app.use("/articles", AuthMiddleware, ArticleController);
 
         // Handle unknown routes (catch-all route)
         const notFoundHandler: RequestHandler = (_req: Request, res: Response, _next: NextFunction): void => {
