@@ -86,7 +86,7 @@ class ArticleController extends Controller {
 
     private async store(req: Request, res: Response) {
         try {
-            const { title, content, category_id, user_id } = req.body;
+            const { title, content, category_id } = req.body;
 
             const validationErrors = await joiValidate(req,
                 Joi.object({

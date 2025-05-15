@@ -61,13 +61,6 @@ class ArticleCategoryController extends Controller {
 
     private async show(req: Request, res: Response) {
         try {
-            const schema = Joi.object({
-                parameter: Joi.string().required(),
-            });
-
-            const validationErrors = await joiValidate(req, schema);
-            if (validationErrors) return super.badRequest(res, "Validation failed", validationErrors);
-
             const { parameter } = req.params;
             const category = await prisma.articleCategory.findFirst({
                 where: {
@@ -148,15 +141,7 @@ class ArticleCategoryController extends Controller {
 
     private async destroy(req: Request, res: Response) {
         try {
-            const schema = Joi.object({
-                parameter: Joi.string().required(),
-            });
-
-            const validationErrors = await joiValidate(req, schema);
-            if (validationErrors) return super.badRequest(res, "Validation failed", validationErrors);
-
             const { parameter } = req.params;
-
             const category = await prisma.articleCategory.findFirst({
                 where: {
                     OR: [{ id: isNaN(+parameter) ? undefined : +parameter }, { slug: parameter }],
