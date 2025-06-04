@@ -110,7 +110,7 @@ class ArticleController extends Controller {
                     content,
                     slug: slugTitle,
                     category_id: +category_id,
-                    user_id: +req.body.user.id,
+                    user_id: +req.user.id,
                     images: { createMany: { data: images.map((path) => ({ path })) } },
                 },
                 include: { images: true },

@@ -44,8 +44,10 @@ const AuthMiddleware = async (req: Request, res: Response, next: NextFunction) =
                 status: 401,
             });
 
-        req.body.user = user;
-        req.body.token = token;
+        req.user = {
+            ...user,
+            token: dbtoken.accessToken,
+        };
 
         next();
     } catch (error: any) {

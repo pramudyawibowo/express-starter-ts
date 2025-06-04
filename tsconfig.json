@@ -10,7 +10,7 @@
             "@middlewares/*": ["middlewares/*"],
             "@resources/*": ["resources/*"],
             "@services/*": ["services/*"],
-            "@prisma/*": ["../prisma/generated/*"],
+            "@prisma/*": ["../prisma/generated/*"]
         },
         "outDir": "./build",
         "esModuleInterop": true,
@@ -21,7 +21,8 @@
         "emitDecoratorMetadata": true,
         "moduleResolution": "node",
         "resolveJsonModule": true,
-        "removeComments": true
+        "removeComments": true,
+        "typeRoots": ["./node_modules/@types", "./src/types"]
     },
     "include": ["src"],
     "exclude": ["node_modules", "build"]
