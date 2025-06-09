@@ -4,7 +4,7 @@
     "description": "Express JS Starter with TypeScript",
     "main": "./build/app.js",
     "scripts": {
-        "dev": "ts-node-dev -r tsconfig-paths/register --respawn --rs ./src/app.ts",
+        "dev": "ts-node-dev -r tsconfig-paths/register --respawn --rs --files ./src/app.ts",
         "build": "tsc && tsc-alias -p tsconfig.json",
         "postbuild": "tsx ./src/commands/SymbolicLink.ts",
         "start": "node ./build/app.js",
