@@ -27,8 +27,8 @@ class MessageController extends Controller {
         this.router.get("/", this.contactIndex);
         this.router.get("/:user_id", this.index);
         this.router.post("/:user_id", this.store);
-        // this.router.put("/:user_id/:message_id", this.update);
-        // this.router.delete("/:user_id/:message_id", this.destroy);
+        this.router.put("/:user_id/:id", this.update);
+        this.router.delete("/:user_id/:id", this.destroy);
     }
 
     public async contactIndex(req: Request, res: Response): Promise<Response> {
@@ -42,18 +42,23 @@ class MessageController extends Controller {
                     messagesReceived: {
                         some: {
                             sender: {
-                                id: {
-                                    not: req.user.id,
-                                },
+                                id: req.user.id,
                             },
                         },
                     },
                 },
             });
-            return super.success(res, users);
+            return super.success(
+                res,
+                users.map((user) => {
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    const { password, ...userWithoutSensitiveData } = user;
+                    return userWithoutSensitiveData;
+                })
+            );
         } catch (error: any) {
             console.error(error.message);
-            return super.error(res, error.message);
+            return super.error(res);
         }
     }
 
@@ -77,7 +82,7 @@ class MessageController extends Controller {
             return super.success(res, messages);
         } catch (error: any) {
             console.error(error.message);
-            return super.error(res, error.message);
+            return super.error(res);
         }
     }
 
@@ -134,56 +139,82 @@ class MessageController extends Controller {
                 SocketService.getIO().to(receiverSocketId).emit("message", message);
             }
 
-            return super.success(res, "success");
+            return super.success(res);
         } catch (error: any) {
             console.error(error.message);
-            return super.error(res, error.message);
+            return super.error(res);
         }
     }
 
-    // public async update(req: Request, res: Response): Promise<Response> {
-    //     try {
-    //         const errors = validationResult(req);
-    //         if (!errors.isEmpty()) return super.badRequest(res, "error", errors.array());
+    public async update(req: Request, res: Response): Promise<Response> {
+        try {
+            const { user_id, id } = req.params;
+            const validationErrors = await joiValidate(
+                req,
+                Joi.object({
+                    content: Joi.string().required(),
+                })
+            );
+            if (validationErrors) return super.badRequest(res, validationErrors);
 
-    //         const { id } = req.params;
-    //         const { title, message } = req.body;
+            if (req.body.medias && req.body.medias.length > 0) {
+                const files = req.body.medias as Express.Multer.File[];
+                req.body.medias = await Promise.all(
+                    files.map(async (file) => {
+                        const savedFile = await saveFile(file, "messages");
+                        return {
+                            filename: file.originalname,
+                            filepath: savedFile,
+                            filetype: file.mimetype,
+                            filesize: file.size,
+                        };
+                    })
+                );
+            }
 
-    //         const data: any = {};
-    //         if (title) data.title = title;
-    //         if (message) data.message = message;
-    //         if (req.body.json) data.json = req.body.json;
+            const message = await prisma.message.update({
+                where: {
+                    id: parseInt(id),
+                    sender_id: req.user.id,
+                    receiver_id: parseInt(user_id),
+                    content: {
+                        not: null,
+                    },
+                },
+                data: {
+                    content: req.body.content || null,
+                },
+            });
 
-    //         const notification = await prisma.notification.update({
-    //             where: {
-    //                 id: parseInt(id),
-    //             },
-    //             data: {
-    //                 ...data,
-    //             },
-    //         });
+            const receiverSocketId = (await getCache(`socket:${user_id}`)) as string | null;
+            if (receiverSocketId) {
+                SocketService.getIO().to(receiverSocketId).emit("message", message);
+            }
 
-    //         return super.success(res, "success", new NotificationResource().get(notification));
-    //     } catch (error: any) {
-    //         console.error(error.message);
-    //         return super.error(res, error.message);
-    //     }
-    // }
+            return super.success(res);
+        } catch (error: any) {
+            console.error(error.message);
+            return super.error(res);
+        }
+    }
 
-    // public async destroy(req: Request, res: Response): Promise<Response> {
-    //     try {
-    //         const { id } = req.params;
-    //         await prisma.notification.delete({
-    //             where: {
-    //                 id: parseInt(id),
-    //             },
-    //         });
-    //         return super.success(res, "success");
-    //     } catch (error: any) {
-    //         console.error(error.message);
-    //         return super.error(res, error.message);
-    //     }
-    // }
+    public async destroy(req: Request, res: Response): Promise<Response> {
+        try {
+            const { user_id, id } = req.params;
+            await prisma.message.delete({
+                where: {
+                    id: parseInt(id),
+                    sender_id: req.user.id,
+                    receiver_id: parseInt(user_id),
+                },
+            });
+
+            return super.success(res);
+        } catch (error: any) {
+            console.error(error.message);
+            return super.error(res);
+        }
+    }
 }
 
 export default new MessageController().getRouter();

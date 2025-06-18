@@ -68,7 +68,7 @@ class AuthController extends Controller {
             return super.success(res, { user: new UserResource().get(user), otp: otp });
         } catch (error: any) {
             console.error("Register error:", error.message);
-            return super.error(res, error.message);
+            return super.error(res);
         }
     };
 
@@ -101,7 +101,7 @@ class AuthController extends Controller {
             return super.success(res, { otp: otp });
         } catch (error: any) {
             console.error(error.message);
-            return super.error(res, error.message);
+            return super.error(res);
         }
     }
 
@@ -153,7 +153,7 @@ class AuthController extends Controller {
             });
         } catch (error: any) {
             console.error(error.message);
-            return super.error(res, error.message);
+            return super.error(res);
         }
     }
 
@@ -173,10 +173,10 @@ class AuthController extends Controller {
                     id: dbtoken.id,
                 },
             });
-            return super.success(res, "success");
+            return super.success(res);
         } catch (error: any) {
             console.error(error.message);
-            return super.error(res, error.message);
+            return super.error(res);
         }
     }
 

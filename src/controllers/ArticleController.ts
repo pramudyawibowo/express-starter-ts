@@ -59,7 +59,7 @@ class ArticleController extends Controller {
             return super.success(res, new ArticleResource().collection(articles));
         } catch (error: any) {
             console.error(error.message);
-            return super.error(res, error.message);
+            return super.error(res);
         }
     }
 
@@ -82,7 +82,7 @@ class ArticleController extends Controller {
             return super.success(res, new ArticleResource().get(article));
         } catch (error: any) {
             console.error(error.message);
-            return super.error(res, error.message);
+            return super.error(res);
         }
     }
 
@@ -122,7 +122,7 @@ class ArticleController extends Controller {
             return super.success(res, new ArticleResource().get(article));
         } catch (error: any) {
             console.error(error.message);
-            return super.error(res, error.message);
+            return super.error(res);
         }
     }
 
@@ -165,7 +165,7 @@ class ArticleController extends Controller {
             return super.success(res, new ArticleResource().get(updatedArticle));
         } catch (error: any) {
             console.error(error.message);
-            return super.error(res, error.message);
+            return super.error(res);
         }
     }
 
@@ -193,7 +193,7 @@ class ArticleController extends Controller {
             return super.success(res, "Article deleted successfully");
         } catch (error: any) {
             console.error(error.message);
-            return super.error(res, error.message);
+            return super.error(res);
         }
     }
 }

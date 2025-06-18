@@ -57,7 +57,7 @@ class ArticleCategoryController extends Controller {
             return super.success(res, categories);
         } catch (error: any) {
             console.error(error.message);
-            return super.error(res, error.message);
+            return super.error(res);
         }
     }
 
@@ -75,7 +75,7 @@ class ArticleCategoryController extends Controller {
             return super.success(res, category);
         } catch (error: any) {
             console.error(error.message);
-            return super.error(res, error.message);
+            return super.error(res);
         }
     }
 
@@ -100,7 +100,7 @@ class ArticleCategoryController extends Controller {
             return super.success(res, category);
         } catch (error: any) {
             console.error(error.message);
-            return super.error(res, error.message);
+            return super.error(res);
         }
     }
 
@@ -137,7 +137,7 @@ class ArticleCategoryController extends Controller {
             return super.success(res, updatedCategory);
         } catch (error: any) {
             console.error(error);
-            return super.error(res, error.message);
+            return super.error(res);
         }
     }
 
@@ -157,7 +157,7 @@ class ArticleCategoryController extends Controller {
             return super.success(res, "Category deleted successfully");
         } catch (error: any) {
             console.error(error.message);
-            return super.error(res, error.message);
+            return super.error(res);
         }
     }
 }
