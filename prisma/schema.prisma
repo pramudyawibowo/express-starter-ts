@@ -12,6 +12,8 @@ model errsole_config {
   id    BigInt @id @default(autoincrement())
   key   String @unique @db.VarChar(255)
   value String
+
+  @@ignore
 }
 
 model errsole_notifications {
@@ -81,9 +83,11 @@ model User {
   created_at  DateTime @default(now())
   updated_at  DateTime @default(now())
 
-  otps     Otp[]
-  Tokens   Token[]
-  articles Article[]
+  otps             Otp[]
+  Tokens           Token[]
+  articles         Article[]
+  messagesSent     Message[] @relation("SenderMessages")
+  messagesReceived Message[] @relation("ReceiverMessages")
 
   @@map("users")
 }
@@ -154,8 +158,41 @@ model ArticleImage {
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
 
-  article    Article  @relation(fields: [articleId], references: [id])
+  article Article @relation(fields: [articleId], references: [id])
 
   @@index([articleId])
   @@map("article_images")
+}
+
+model Message {
+  id          Int      @id @default(autoincrement())
+  uuid        String   @unique @default(uuid()) @db.Uuid
+  sender_id   Int
+  receiver_id Int
+  content     String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @default(now())
+
+  sender   User @relation("SenderMessages", fields: [sender_id], references: [id])
+  receiver User @relation("ReceiverMessages", fields: [receiver_id], references: [id])
+
+  medias MessageMedia[]
+
+  @@map("messages")
+}
+
+model MessageMedia {
+  id         Int      @id @default(autoincrement())
+  messageId  Int
+  filename   String
+  filepath   String
+  filetype   String
+  filesize   Int
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id])
+
+  @@index([messageId])
+  @@map("message_medias")
 }

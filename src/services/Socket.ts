@@ -2,6 +2,9 @@ import { Server as SocketIOServer } from "socket.io";
 import type { Server as HTTPServer } from "http";
 import { createClient } from "redis";
 import { createAdapter } from "@socket.io/redis-adapter";
+import { verifyAccessToken } from "@helpers/Jwt";
+import { prisma } from "@helpers/Prisma";
+import { deleteCache, setCache } from "@helpers/Cache";
 
 export class SocketService {
     private static io: SocketIOServer;
@@ -35,6 +38,15 @@ export class SocketService {
 
             const subClient = pubClient.duplicate();
 
+            // Add error handlers for Redis clients
+            pubClient.on('error', (err) => {
+                console.error('Redis pub client error:', err);
+            });
+
+            subClient.on('error', (err) => {
+                console.error('Redis sub client error:', err);
+            });
+
             await Promise.all([pubClient.connect(), subClient.connect()]);
 
             this.io.adapter(createAdapter(pubClient, subClient));
@@ -55,11 +67,34 @@ export class SocketService {
             }
         }
 
-        this.io.on("connection", (socket) => {
-            console.log("Client connected:", socket.id);
+        this.io.use(async (socket, next) => {
+            const token = socket.handshake.auth.token || socket.handshake.query.token;
+            if (token) {
+                const decoded = await verifyAccessToken(token);
+                if (!decoded) return next(new Error("Token Invalid"));
+                const user = await prisma.user.findFirst({
+                    where: {
+                        phonenumber: decoded.phonenumber,
+                    },
+                });
+                if (!user) return next(new Error("User Not Found"));
+
+                (socket as any).user = user;
+            }
+            next();
+        });
+
+        this.io.on("connection", async (socket) => {
+            if ((socket as any).user) {
+                const userId = (socket as any).user.id;
+                await setCache(`socket:${userId}`, socket.id, 3600)
+            }
             
-            socket.on("disconnect", () => {
-                console.log("Client disconnected:", socket.id);
+            socket.on("disconnect", async () => {
+                if ((socket as any).user) {
+                    const userId = (socket as any).user.id;
+                    await deleteCache(`socket:${userId}`);
+                }
             });
         });
     }

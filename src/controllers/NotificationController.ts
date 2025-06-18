@@ -5,6 +5,7 @@ import { body, validationResult } from "express-validator";
 import NotificationResource from "@resources/NotificationResource";
 import { prisma } from "@helpers/Prisma";
 import { SocketService } from "@services/Socket";
+import { autobind } from "@utils/Autobind";
 
 class NotificationController extends Controller {
     private router: Router;
@@ -12,6 +13,7 @@ class NotificationController extends Controller {
     constructor() {
         super();
         this.router = Router();
+        autobind(this);
         this.routes();
     }
 
@@ -34,7 +36,7 @@ class NotificationController extends Controller {
                 skip: page ? (parseInt(page.toString()) - 1) * (perPage ? parseInt(perPage.toString()) : 10) : 0,
                 take: perPage ? parseInt(perPage.toString()) : 10,
             });
-            return super.success(res, "success", new NotificationResource().collection(notifications));
+            return super.success(res, new NotificationResource().collection(notifications));
         } catch (error: any) {
             console.error(error.message);
             return super.error(res, error.message);
@@ -50,7 +52,7 @@ class NotificationController extends Controller {
                 },
             });
             if (!notification) return super.notFound(res, "Not Found");
-            return super.success(res, "success", new NotificationResource().get(notification));
+            return super.success(res, new NotificationResource().get(notification));
         } catch (error: any) {
             console.error(error.message);
             return super.error(res, error.message);
@@ -61,7 +63,7 @@ class NotificationController extends Controller {
     public async store(req: Request, res: Response): Promise<Response> {
         try {
             const errors = validationResult(req);
-            if (!errors.isEmpty()) return super.badRequest(res, "invalid request", errors.array());
+            if (!errors.isEmpty()) return super.badRequest(res, errors.array());
 
             const { title, message } = req.body;
             const notification = await prisma.notification.create({
@@ -75,7 +77,7 @@ class NotificationController extends Controller {
             const socket = SocketService.getIO();
             socket.emit("notification", notification);
 
-            return super.success(res, "success", new NotificationResource().get(notification));
+            return super.success(res, new NotificationResource().get(notification));
         } catch (error: any) {
             console.error(error.message);
             return super.error(res, error.message);
@@ -85,7 +87,7 @@ class NotificationController extends Controller {
     public async update(req: Request, res: Response): Promise<Response> {
         try {
             const errors = validationResult(req);
-            if (!errors.isEmpty()) return super.badRequest(res, "error", errors.array());
+            if (!errors.isEmpty()) return super.badRequest(res, errors.array());
 
             const { id } = req.params;
             const { title, message } = req.body;
@@ -104,7 +106,7 @@ class NotificationController extends Controller {
                 },
             });
 
-            return super.success(res, "success", new NotificationResource().get(notification));
+            return super.success(res, new NotificationResource().get(notification));
         } catch (error: any) {
             console.error(error.message);
             return super.error(res, error.message);

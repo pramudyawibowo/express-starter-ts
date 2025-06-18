@@ -4,6 +4,7 @@ import Controller from "./Controller";
 import { prisma } from "@helpers/Prisma";
 import { joiValidate } from "@helpers/Joi";
 import Joi from "joi";
+import { autobind } from "@utils/Autobind";
 
 class ArticleCategoryController extends Controller {
     private router: Router;
@@ -11,6 +12,7 @@ class ArticleCategoryController extends Controller {
     constructor() {
         super();
         this.router = Router();
+        autobind(this);
         this.routes();
     }
 
@@ -38,7 +40,7 @@ class ArticleCategoryController extends Controller {
             });
 
             const validationErrors = await joiValidate(req, schema);
-            if (validationErrors) return super.badRequest(res, "Validation failed", validationErrors);
+            if (validationErrors) return super.badRequest(res, validationErrors);
 
             const { page = 1, perPage = 10, search = "", all = "false", orderby = "id", order = "desc" } = req.query;
 
@@ -52,7 +54,7 @@ class ArticleCategoryController extends Controller {
                 ...(all === "true" ? {} : { skip: (+page - 1) * +perPage, take: +perPage }),
             });
 
-            return super.success(res, "success", categories);
+            return super.success(res, categories);
         } catch (error: any) {
             console.error(error.message);
             return super.error(res, error.message);
@@ -70,7 +72,7 @@ class ArticleCategoryController extends Controller {
 
             if (!category) return super.notFound(res, "Category not found");
 
-            return super.success(res, "Category retrieved successfully", category);
+            return super.success(res, category);
         } catch (error: any) {
             console.error(error.message);
             return super.error(res, error.message);
@@ -84,7 +86,7 @@ class ArticleCategoryController extends Controller {
             });
 
             const validationErrors = await joiValidate(req, schema, { name: { prisma, model: "articleCategory", field: "name", type: "unique" } });
-            if (validationErrors) return super.badRequest(res, "Validation failed", validationErrors);
+            if (validationErrors) return super.badRequest(res, validationErrors);
 
             const { name } = req.body;
             const slugName = name.toLowerCase().replace(/\s+/g, "-");
@@ -95,7 +97,7 @@ class ArticleCategoryController extends Controller {
                 },
             });
 
-            return super.success(res, "Category created successfully", category);
+            return super.success(res, category);
         } catch (error: any) {
             console.error(error.message);
             return super.error(res, error.message);
@@ -113,7 +115,7 @@ class ArticleCategoryController extends Controller {
             const validationErrors = await joiValidate(req, schema, {
                 name: { prisma, model: "articleCategory", field: "name", type: "unique", exceptId: +id },
             });
-            if (validationErrors) return super.badRequest(res, "Validation failed", validationErrors);
+            if (validationErrors) return super.badRequest(res,  validationErrors);
 
             const { name } = req.body;
 
@@ -132,7 +134,7 @@ class ArticleCategoryController extends Controller {
                 },
             });
 
-            return super.success(res, "Category updated successfully", updatedCategory);
+            return super.success(res, updatedCategory);
         } catch (error: any) {
             console.error(error);
             return super.error(res, error.message);

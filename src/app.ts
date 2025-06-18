@@ -6,7 +6,7 @@ import { prisma } from "@helpers/Prisma";
 import { errsole, initializeErrsole } from "@services/Errsole";
 import { SocketService } from "@services/Socket";
 import { ApiKeyMiddleware, MulterMiddleware, MorganMiddleware, AuthMiddleware } from "@middlewares/index";
-import { NotificationController, AuthController, ArticleController, ArticleCategoryController } from "@controllers/index";
+import { NotificationController, AuthController, ArticleController, ArticleCategoryController, MessageController } from "@controllers/index";
 import cors from "cors";
 import compression from "compression";
 import helmet from "helmet";
@@ -51,6 +51,7 @@ class App {
         this.app.use("/notifications", AuthMiddleware, NotificationController);
         this.app.use("/article-categories", AuthMiddleware, ArticleCategoryController);
         this.app.use("/articles", AuthMiddleware, ArticleController);
+        this.app.use("/messages", AuthMiddleware, MessageController); // Import MessageController dynamically
 
         // Handle unknown routes (catch-all route)
         const notFoundHandler: RequestHandler = (_req: Request, res: Response, _next: NextFunction): void => {

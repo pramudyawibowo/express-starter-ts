@@ -10,6 +10,7 @@ import { UserResource } from "@resources/index";
 import { prisma } from "@helpers/Prisma";
 import Joi from "joi";
 import { joiValidate } from "@helpers/Joi";
+import { autobind } from "@utils/Autobind";
 
 class AuthController extends Controller {
     private router: Router;
@@ -17,6 +18,7 @@ class AuthController extends Controller {
     constructor() {
         super();
         this.router = Router();
+        autobind(this);
         this.routes();
     }
 
@@ -32,7 +34,7 @@ class AuthController extends Controller {
         this.router.post("/refresh", this.refreshAccessToken);
     }
 
-    public async register(req: Request, res: Response): Promise<Response> {
+    public register = async (req: Request, res: Response): Promise<Response> => {
         try {
             const validationErrors = await joiValidate(req,
                 Joi.object({
@@ -40,7 +42,7 @@ class AuthController extends Controller {
                     phonenumber: Joi.string().required(),
                 }),
             );
-            if (validationErrors) return super.badRequest(res, "Bad Request", validationErrors);
+            if (validationErrors) return super.badRequest(res, validationErrors);
 
             const { name, phonenumber } = req.body;
 
@@ -62,9 +64,9 @@ class AuthController extends Controller {
             const otp = generateOtp();
             sendOtp(user.phonenumber, otp, "login");
 
-            return super.success(res, "success", { user: new UserResource().get(user), otp: otp });
+            return super.success(res, { user: new UserResource().get(user), otp: otp });
         } catch (error: any) {
-            console.error(error.message);
+            console.error('Register error:', error.message);
             return super.error(res, error.message);
         }
     }
@@ -76,7 +78,7 @@ class AuthController extends Controller {
                     phonenumber: Joi.string().required(),
                 }),
             );
-            if (validationErrors) return super.badRequest(res, "Bad Request", validationErrors);
+            if (validationErrors) return super.badRequest(res, validationErrors);
 
             const { phonenumber } = req.body;
             const user = await prisma.user.findFirst({
@@ -94,7 +96,7 @@ class AuthController extends Controller {
             const otp = generateOtp();
             sendOtp(user.phonenumber, otp, "login");
 
-            return super.success(res, "success", { otp: otp });
+            return super.success(res, { otp: otp });
         } catch (error: any) {
             console.error(error.message);
             return super.error(res, error.message);
@@ -109,7 +111,7 @@ class AuthController extends Controller {
                     otp: Joi.string().required(),
                 }),
             );
-            if (validationErrors) return super.badRequest(res, "Bad Request", validationErrors);
+            if (validationErrors) return super.badRequest(res, validationErrors);
 
             const { phonenumber, otp } = req.body;
 
@@ -142,7 +144,7 @@ class AuthController extends Controller {
                 },
             });
 
-            return super.success(res, "success", {
+            return super.success(res, {
                 accessToken,
                 refreshToken,
             });
@@ -209,7 +211,7 @@ class AuthController extends Controller {
                 },
             });
 
-            return super.success(res, "success", {
+            return super.success(res, {
                 accessToken: newAccessToken,
             });
         } catch (error: any) {

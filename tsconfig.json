@@ -10,7 +10,8 @@
             "@middlewares/*": ["middlewares/*"],
             "@resources/*": ["resources/*"],
             "@services/*": ["services/*"],
-            "@prisma/*": ["../prisma/generated/*"]
+            "@prisma/*": ["../prisma/generated/*"],
+            "@utils/*": ["utils/*"],
         },
         "outDir": "./build",
         "esModuleInterop": true,

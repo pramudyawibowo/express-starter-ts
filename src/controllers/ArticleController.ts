@@ -8,6 +8,7 @@ import { validate as uuidValidate } from "uuid";
 import { prisma } from "@helpers/Prisma";
 import { joiValidate } from "@helpers/Joi";
 import Joi from "joi";
+import { autobind } from "@utils/Autobind";
 
 class ArticleController extends Controller {
     private router: Router;
@@ -15,6 +16,7 @@ class ArticleController extends Controller {
     constructor() {
         super();
         this.router = Router();
+        autobind(this);
         this.routes();
     }
 
@@ -54,7 +56,7 @@ class ArticleController extends Controller {
                 ...(all === "true" ? {} : { skip: (+page - 1) * +perPage, take: +perPage }),
             });
 
-            return super.success(res, "success", new ArticleResource().collection(articles));
+            return super.success(res, new ArticleResource().collection(articles));
         } catch (error: any) {
             console.error(error.message);
             return super.error(res, error.message);
@@ -77,7 +79,7 @@ class ArticleController extends Controller {
 
             if (!article) return super.notFound(res, "Article not found");
 
-            return super.success(res, "Article retrieved successfully", new ArticleResource().get(article));
+            return super.success(res, new ArticleResource().get(article));
         } catch (error: any) {
             console.error(error.message);
             return super.error(res, error.message);
@@ -95,7 +97,7 @@ class ArticleController extends Controller {
                     category_id: Joi.number().required(),
                 }),
             );
-            if (validationErrors) return super.badRequest(res, "Validation failed", validationErrors);
+            if (validationErrors) return super.badRequest(res, validationErrors);
 
             const slugTitle = slug(title, { lower: true });
             const existingSlug = await prisma.article.findUnique({ where: { slug: slugTitle } });
@@ -116,7 +118,7 @@ class ArticleController extends Controller {
                 include: { images: true },
             });
 
-            return super.success(res, "Article created successfully", new ArticleResource().get(article));
+            return super.success(res, new ArticleResource().get(article));
         } catch (error: any) {
             console.error(error.message);
             return super.error(res, error.message);
@@ -159,7 +161,7 @@ class ArticleController extends Controller {
                 });
             }
 
-            return super.success(res, "Article updated successfully", new ArticleResource().get(updatedArticle));
+            return super.success(res, new ArticleResource().get(updatedArticle));
         } catch (error: any) {
             console.error(error.message);
             return super.error(res, error.message);
