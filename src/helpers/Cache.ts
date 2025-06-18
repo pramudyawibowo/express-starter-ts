@@ -19,8 +19,8 @@ class CacheSystem {
         const pass = process.env.REDIS_PASSWORD || "";
         const host = process.env.REDIS_HOST || "127.0.0.1";
         const port = process.env.REDIS_PORT || "6379";
-        
-        const url = `redis://${host}:${port}` ;
+
+        const url = `redis://${host}:${port}`;
 
         this.client = createClient({
             url: url,

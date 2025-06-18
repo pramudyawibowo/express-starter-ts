@@ -36,11 +36,12 @@ class AuthController extends Controller {
 
     public register = async (req: Request, res: Response): Promise<Response> => {
         try {
-            const validationErrors = await joiValidate(req,
+            const validationErrors = await joiValidate(
+                req,
                 Joi.object({
                     name: Joi.string().required(),
                     phonenumber: Joi.string().required(),
-                }),
+                })
             );
             if (validationErrors) return super.badRequest(res, validationErrors);
 
@@ -66,17 +67,18 @@ class AuthController extends Controller {
 
             return super.success(res, { user: new UserResource().get(user), otp: otp });
         } catch (error: any) {
-            console.error('Register error:', error.message);
+            console.error("Register error:", error.message);
             return super.error(res, error.message);
         }
-    }
+    };
 
     public async login(req: Request, res: Response): Promise<Response> {
         try {
-            const validationErrors = await joiValidate(req,
+            const validationErrors = await joiValidate(
+                req,
                 Joi.object({
                     phonenumber: Joi.string().required(),
-                }),
+                })
             );
             if (validationErrors) return super.badRequest(res, validationErrors);
 
@@ -105,11 +107,12 @@ class AuthController extends Controller {
 
     public async verifyOtp(req: Request, res: Response): Promise<Response> {
         try {
-            const validationErrors = await joiValidate(req,
+            const validationErrors = await joiValidate(
+                req,
                 Joi.object({
                     phonenumber: Joi.string().required(),
                     otp: Joi.string().required(),
-                }),
+                })
             );
             if (validationErrors) return super.badRequest(res, validationErrors);
 

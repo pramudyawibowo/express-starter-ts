@@ -115,7 +115,7 @@ class ArticleCategoryController extends Controller {
             const validationErrors = await joiValidate(req, schema, {
                 name: { prisma, model: "articleCategory", field: "name", type: "unique", exceptId: +id },
             });
-            if (validationErrors) return super.badRequest(res,  validationErrors);
+            if (validationErrors) return super.badRequest(res, validationErrors);
 
             const { name } = req.body;
 

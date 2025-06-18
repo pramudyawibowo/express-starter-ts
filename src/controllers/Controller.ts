@@ -2,9 +2,9 @@ import type { Response } from "express";
 
 export default class Controller {
     protected respond(response: Response, status: number, data?: any, message: string = ""): Response {
-        if (!response || typeof response.status !== 'function') {
-            console.error('Invalid response object provided to respond method');
-            throw new Error('Invalid response object');
+        if (!response || typeof response.status !== "function") {
+            console.error("Invalid response object provided to respond method");
+            throw new Error("Invalid response object");
         }
 
         if (data && typeof data === "string") {

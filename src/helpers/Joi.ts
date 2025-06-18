@@ -120,7 +120,7 @@ export const joiValidate = async (
             const dbErrors: ErrorMessages = {};
             for (const [key, options] of Object.entries(dbValidationOptions)) {
                 const whereClause: any = { [options.field]: data[key] };
-                
+
                 // Apply exceptId only if it is provided
                 if (options.type === "unique" && options.exceptId !== undefined) {
                     whereClause.id = { not: options.exceptId };

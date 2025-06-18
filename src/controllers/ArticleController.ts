@@ -90,12 +90,13 @@ class ArticleController extends Controller {
         try {
             const { title, content, category_id } = req.body;
 
-            const validationErrors = await joiValidate(req,
+            const validationErrors = await joiValidate(
+                req,
                 Joi.object({
                     title: Joi.string().required(),
                     content: Joi.string().required(),
                     category_id: Joi.number().required(),
-                }),
+                })
             );
             if (validationErrors) return super.badRequest(res, validationErrors);
 

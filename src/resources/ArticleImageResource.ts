@@ -1,4 +1,4 @@
-import type { ArticleImage } from '@prisma/client';
+import type { ArticleImage } from "@prisma/client";
 
 export default class ArticleImageResource {
     collection(articles: ArticleImage[]): object[] {

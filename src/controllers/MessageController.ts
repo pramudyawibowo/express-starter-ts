@@ -113,21 +113,23 @@ class MessageController extends Controller {
                     sender_id: req.user.id,
                     receiver_id: parseInt(user_id),
                     content: req.body.content || null,
-                    medias: req.body.medias ? {
-                        create: req.body.medias.map((media: any) => ({
-                            filename: media.filename,
-                            filepath: media.filepath,
-                            filetype: media.filetype,
-                            filesize: media.filesize,
-                        }))
-                    } : undefined,
+                    medias: req.body.medias
+                        ? {
+                              create: req.body.medias.map((media: any) => ({
+                                  filename: media.filename,
+                                  filepath: media.filepath,
+                                  filetype: media.filetype,
+                                  filesize: media.filesize,
+                              })),
+                          }
+                        : undefined,
                 },
                 include: {
-                    medias: true
-                }
+                    medias: true,
+                },
             });
 
-            const receiverSocketId = await getCache(`socket:${user_id}`) as string | null;
+            const receiverSocketId = (await getCache(`socket:${user_id}`)) as string | null;
             if (receiverSocketId) {
                 SocketService.getIO().to(receiverSocketId).emit("message", message);
             }

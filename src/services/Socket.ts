@@ -39,12 +39,12 @@ export class SocketService {
             const subClient = pubClient.duplicate();
 
             // Add error handlers for Redis clients
-            pubClient.on('error', (err) => {
-                console.error('Redis pub client error:', err);
+            pubClient.on("error", (err) => {
+                console.error("Redis pub client error:", err);
             });
 
-            subClient.on('error', (err) => {
-                console.error('Redis sub client error:', err);
+            subClient.on("error", (err) => {
+                console.error("Redis sub client error:", err);
             });
 
             await Promise.all([pubClient.connect(), subClient.connect()]);
@@ -87,9 +87,9 @@ export class SocketService {
         this.io.on("connection", async (socket) => {
             if ((socket as any).user) {
                 const userId = (socket as any).user.id;
-                await setCache(`socket:${userId}`, socket.id, 3600)
+                await setCache(`socket:${userId}`, socket.id, 3600);
             }
-            
+
             socket.on("disconnect", async () => {
                 if ((socket as any).user) {
                     const userId = (socket as any).user.id;
