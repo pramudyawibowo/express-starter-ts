@@ -57,7 +57,7 @@ class MessageController extends Controller {
                 })
             );
         } catch (error: any) {
-            console.error(error.message);
+            console.error(error);
             return super.error(res);
         }
     }
@@ -81,7 +81,7 @@ class MessageController extends Controller {
             });
             return super.success(res, messages);
         } catch (error: any) {
-            console.error(error.message);
+            console.error(error);
             return super.error(res);
         }
     }
@@ -141,7 +141,7 @@ class MessageController extends Controller {
 
             return super.success(res);
         } catch (error: any) {
-            console.error(error.message);
+            console.error(error);
             return super.error(res);
         }
     }
@@ -193,7 +193,7 @@ class MessageController extends Controller {
 
             return super.success(res);
         } catch (error: any) {
-            console.error(error.message);
+            console.error(error);
             return super.error(res);
         }
     }
@@ -211,7 +211,7 @@ class MessageController extends Controller {
 
             return super.success(res);
         } catch (error: any) {
-            console.error(error.message);
+            console.error(error);
             return super.error(res);
         }
     }

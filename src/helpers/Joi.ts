@@ -119,7 +119,15 @@ export const joiValidate = async (
         if (dbValidationOptions) {
             const dbErrors: ErrorMessages = {};
             for (const [key, options] of Object.entries(dbValidationOptions)) {
-                const whereClause: any = { [options.field]: data[key] };
+                // Cast data[key] to appropriate type based on field
+                let fieldValue = data[key];
+
+                // Handle number fields (most common for IDs)
+                if (typeof fieldValue === "string" && /^\d+$/.test(fieldValue)) {
+                    fieldValue = parseInt(fieldValue, 10);
+                }
+
+                const whereClause: any = { [options.field]: fieldValue };
 
                 // Apply exceptId only if it is provided
                 if (options.type === "unique" && options.exceptId !== undefined) {
@@ -141,18 +149,28 @@ export const joiValidate = async (
 
         return;
     } catch (error) {
-        const errorMessages: ErrorMessages = (error as Joi.ValidationError).details.reduce((acc: ErrorMessages, detail: Joi.ValidationErrorItem) => {
-            if (detail.context && detail.context.key) {
-                const fieldName = detail.context.key;
-                if (!acc[fieldName]) {
-                    acc[fieldName] = [];
-                }
-                const translatedMessage = translateErrorMessage(detail.message.replace(/"/g, ""));
-                acc[fieldName].push(translatedMessage);
-            }
-            return acc;
-        }, {} as ErrorMessages);
+        // Check if error is a Joi ValidationError with details
+        if (error instanceof Error && "details" in error && Array.isArray((error as Joi.ValidationError).details)) {
+            const errorMessages: ErrorMessages = (error as Joi.ValidationError).details.reduce(
+                (acc: ErrorMessages, detail: Joi.ValidationErrorItem) => {
+                    if (detail.context && detail.context.key) {
+                        const fieldName = detail.context.key;
+                        if (!acc[fieldName]) {
+                            acc[fieldName] = [];
+                        }
+                        const translatedMessage = translateErrorMessage(detail.message.replace(/"/g, ""));
+                        acc[fieldName].push(translatedMessage);
+                    }
+                    return acc;
+                },
+                {} as ErrorMessages
+            );
 
-        return errorMessages;
+            return errorMessages;
+        } else {
+            // Handle non-Joi validation errors
+            console.error("Non-Joi validation error:", error);
+            return { general: ["An unexpected error occurred during validation"] };
+        }
     }
 };

@@ -1,3 +1,4 @@
+import ArticleCategoryResource from "./ArticleCategoryResource";
 import ArticleImageResource from "./ArticleImageResource";
 
 export default class ArticleResource {
@@ -15,11 +16,13 @@ export default class ArticleResource {
         return {
             id: article.id,
             uuid: article.uuid,
+            category_id: article.category_id,
             slug: article.slug,
             title: article.title,
             content: article.content,
             images: article.images ? new ArticleImageResource().collection(article.images) : [],
             created_at: article.created_at,
+            category: new ArticleCategoryResource().get(article.category),
         };
     }
 }

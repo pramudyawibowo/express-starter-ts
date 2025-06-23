@@ -100,7 +100,7 @@ class AuthController extends Controller {
 
             return super.success(res, { otp: otp });
         } catch (error: any) {
-            console.error(error.message);
+            console.error(error);
             return super.error(res);
         }
     }
@@ -152,7 +152,7 @@ class AuthController extends Controller {
                 refreshToken,
             });
         } catch (error: any) {
-            console.error(error.message);
+            console.error(error);
             return super.error(res);
         }
     }
@@ -175,7 +175,7 @@ class AuthController extends Controller {
             });
             return super.success(res);
         } catch (error: any) {
-            console.error(error.message);
+            console.error(error);
             return super.error(res);
         }
     }
@@ -218,7 +218,7 @@ class AuthController extends Controller {
                 accessToken: newAccessToken,
             });
         } catch (error: any) {
-            console.error(error.message);
+            console.error(error);
             return super.error(res, "error", error);
         }
     }

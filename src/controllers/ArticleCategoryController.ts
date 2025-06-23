@@ -56,7 +56,7 @@ class ArticleCategoryController extends Controller {
 
             return super.success(res, categories);
         } catch (error: any) {
-            console.error(error.message);
+            console.error(error);
             return super.error(res);
         }
     }
@@ -74,7 +74,7 @@ class ArticleCategoryController extends Controller {
 
             return super.success(res, category);
         } catch (error: any) {
-            console.error(error.message);
+            console.error(error);
             return super.error(res);
         }
     }
@@ -99,7 +99,7 @@ class ArticleCategoryController extends Controller {
 
             return super.success(res, category);
         } catch (error: any) {
-            console.error(error.message);
+            console.error(error);
             return super.error(res);
         }
     }
@@ -156,7 +156,7 @@ class ArticleCategoryController extends Controller {
 
             return super.success(res, "Category deleted successfully");
         } catch (error: any) {
-            console.error(error.message);
+            console.error(error);
             return super.error(res);
         }
     }

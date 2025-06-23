@@ -51,7 +51,7 @@ const AuthMiddleware = async (req: Request, res: Response, next: NextFunction) =
 
         next();
     } catch (error: any) {
-        console.error(error.message);
+        console.error(error);
         return res.status(500).json({
             data: error,
             message: "Internal Server Error",

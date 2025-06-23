@@ -38,7 +38,7 @@ class NotificationController extends Controller {
             });
             return super.success(res, new NotificationResource().collection(notifications));
         } catch (error: any) {
-            console.error(error.message);
+            console.error(error);
             return super.error(res);
         }
     }
@@ -54,7 +54,7 @@ class NotificationController extends Controller {
             if (!notification) return super.notFound(res, "Not Found");
             return super.success(res, new NotificationResource().get(notification));
         } catch (error: any) {
-            console.error(error.message);
+            console.error(error);
             return super.error(res);
         }
     }
@@ -79,7 +79,7 @@ class NotificationController extends Controller {
 
             return super.success(res, new NotificationResource().get(notification));
         } catch (error: any) {
-            console.error(error.message);
+            console.error(error);
             return super.error(res);
         }
     }
@@ -108,7 +108,7 @@ class NotificationController extends Controller {
 
             return super.success(res, new NotificationResource().get(notification));
         } catch (error: any) {
-            console.error(error.message);
+            console.error(error);
             return super.error(res);
         }
     }
@@ -123,7 +123,7 @@ class NotificationController extends Controller {
             });
             return super.success(res);
         } catch (error: any) {
-            console.error(error.message);
+            console.error(error);
             return super.error(res);
         }
     }

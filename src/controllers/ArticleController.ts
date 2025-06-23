@@ -51,14 +51,14 @@ class ArticleController extends Controller {
 
             const articles = await prisma.article.findMany({
                 where: filters,
-                include: { images: true },
+                include: { images: true, category: true },
                 orderBy: { [orderby.toString()]: order.toString().toLowerCase() },
                 ...(all === "true" ? {} : { skip: (+page - 1) * +perPage, take: +perPage }),
             });
 
             return super.success(res, new ArticleResource().collection(articles));
         } catch (error: any) {
-            console.error(error.message);
+            console.error(error);
             return super.error(res);
         }
     }
@@ -74,14 +74,14 @@ class ArticleController extends Controller {
                         { uuid: uuidValidate(parameter) ? parameter : undefined },
                     ],
                 },
-                include: { images: true },
+                include: { images: true, category: true },
             });
 
             if (!article) return super.notFound(res, "Article not found");
 
             return super.success(res, new ArticleResource().get(article));
         } catch (error: any) {
-            console.error(error.message);
+            console.error(error);
             return super.error(res);
         }
     }
@@ -96,7 +96,15 @@ class ArticleController extends Controller {
                     title: Joi.string().required(),
                     content: Joi.string().required(),
                     category_id: Joi.number().required(),
-                })
+                }),
+                {
+                    category_id: {
+                        prisma: prisma,
+                        model: "articleCategory",
+                        field: "id",
+                        type: "exists",
+                    },
+                }
             );
             if (validationErrors) return super.badRequest(res, validationErrors);
 
@@ -116,12 +124,12 @@ class ArticleController extends Controller {
                     user_id: +req.user.id,
                     images: { createMany: { data: images.map((path) => ({ path })) } },
                 },
-                include: { images: true },
+                include: { images: true, category: true },
             });
 
             return super.success(res, new ArticleResource().get(article));
         } catch (error: any) {
-            console.error(error.message);
+            console.error(error);
             return super.error(res);
         }
     }
@@ -143,28 +151,23 @@ class ArticleController extends Controller {
 
             if (!article) return super.notFound(res, "Article not found");
 
+            const files = req.files as Express.Multer.File[];
+            const images = files ? await Promise.all(files.map((file) => saveFile(file, "articles"))) : [];
+
             const updatedArticle = await prisma.article.update({
                 where: { id: article.id },
                 data: {
                     ...(title && { title }),
                     ...(content && { content }),
                     ...(category_id && { category_id: +category_id }),
+                    images: { createMany: { data: images.map((path) => ({ path })) } },
                 },
-                include: { images: true },
+                include: { images: true, category: true },
             });
-
-            const files = req.files as Express.Multer.File[];
-            if (files) {
-                const images = await Promise.all(files.map((file) => saveFile(file, "articles")));
-                await prisma.articleImage.deleteMany({ where: { articleId: article.id } });
-                await prisma.articleImage.createMany({
-                    data: images.map((path) => ({ path, articleId: article.id })),
-                });
-            }
 
             return super.success(res, new ArticleResource().get(updatedArticle));
         } catch (error: any) {
-            console.error(error.message);
+            console.error(error);
             return super.error(res);
         }
     }
@@ -181,7 +184,7 @@ class ArticleController extends Controller {
                         { uuid: uuidValidate(parameter) ? parameter : undefined },
                     ],
                 },
-                include: { images: true },
+                include: { images: true, category: true },
             });
 
             if (!article) return super.notFound(res, "Article not found");
@@ -192,7 +195,7 @@ class ArticleController extends Controller {
 
             return super.success(res, "Article deleted successfully");
         } catch (error: any) {
-            console.error(error.message);
+            console.error(error);
             return super.error(res);
         }
     }
