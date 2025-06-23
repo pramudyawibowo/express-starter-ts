@@ -12,13 +12,16 @@ const AuthMiddleware = async (req: Request, res: Response, next: NextFunction) =
                 status: 401,
             });
 
-        const decoded = verifyAccessToken(token);
-        if (!decoded)
+        let decoded;
+        try {
+            decoded = verifyAccessToken(token);
+        } catch (error) {
             return res.status(401).json({
                 data: null,
-                message: "Token Invalid",
+                message: "expired_token",
                 status: 401,
             });
+        }
 
         const dbtoken = await prisma.token.findFirst({
             where: {
