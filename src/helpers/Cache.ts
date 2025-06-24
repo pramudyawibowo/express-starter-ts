@@ -2,70 +2,28 @@ import "dotenv/config";
 import fs from "fs";
 import path from "path";
 import type { RedisClientType } from "redis";
-import { createClient } from "redis";
+import { redisManager, isRedisConnected } from "./Redis";
 
 class CacheSystem {
     private static instance: CacheSystem;
     private client: RedisClientType;
-    private isConnected: boolean = false;
     private readonly cacheFile: string = path.join(__dirname, "..", "public", "storage", "cache.json");
     private cacheData: Record<string, { value: any; expiresAt: number }> = {};
     private loggedFileCache: boolean = false;
-    private reconnectAttempts: number = 0;
-    private readonly MAX_RECONNECT_ATTEMPTS = 10;
 
     private constructor() {
-        const user = process.env.REDIS_USER || "default";
-        const pass = process.env.REDIS_PASSWORD || "";
-        const host = process.env.REDIS_HOST || "127.0.0.1";
-        const port = process.env.REDIS_PORT || "6379";
-
-        const url = `redis://${host}:${port}`;
-
-        this.client = createClient({
-            url: url,
-            username: user,
-            password: pass,
-            socket: {
-                reconnectStrategy: (retries) => {
-                    if (retries > this.MAX_RECONNECT_ATTEMPTS) {
-                        this.isConnected = false;
-                        return new Error("Redis max reconnection attempts reached");
-                    }
-                    return Math.min(retries * 100, 3000);
-                },
-            },
-        });
+        this.client = redisManager.getClient();
         this.setupEventHandlers();
-        this.connect();
-
         this.loadFileCache();
     }
 
     private setupEventHandlers(): void {
         this.client.on("error", () => {
-            this.isConnected = false;
             if (!this.loggedFileCache) {
                 console.log("Using file-based cache.");
                 this.loggedFileCache = true;
             }
         });
-        this.client.on("connect", () => {
-            this.isConnected = true;
-            console.log("Using Redis cache.");
-        });
-    }
-
-    private async connect(): Promise<void> {
-        try {
-            await this.client.connect();
-        } catch {
-            this.isConnected = false;
-            if (!this.loggedFileCache) {
-                console.log("Redis connection failed. Using file-based cache.");
-                this.loggedFileCache = true;
-            }
-        }
     }
 
     public static getInstance(): CacheSystem {
@@ -77,7 +35,7 @@ class CacheSystem {
 
     public async set(key: string, value: any, expired: number): Promise<void> {
         const data = JSON.stringify(value);
-        if (this.isConnected) {
+        if (isRedisConnected()) {
             await this.client.set(key, data, { EX: expired });
         } else {
             this.cacheData[key] = { value, expiresAt: Date.now() + expired * 1000 };
@@ -86,7 +44,7 @@ class CacheSystem {
     }
 
     public async get<T>(key: string): Promise<T | null> {
-        if (this.isConnected) {
+        if (isRedisConnected()) {
             const result = await this.client.get(key);
             return result ? JSON.parse(result) : null;
         } else {
@@ -95,7 +53,7 @@ class CacheSystem {
     }
 
     public async delete(key: string): Promise<void> {
-        if (this.isConnected) {
+        if (isRedisConnected()) {
             await this.client.del(key);
         } else {
             delete this.cacheData[key];
@@ -104,12 +62,16 @@ class CacheSystem {
     }
 
     public async flush(): Promise<void> {
-        if (this.isConnected) {
+        if (isRedisConnected()) {
             await this.client.flushAll();
         } else {
             this.cacheData = {};
             this.saveFileCache();
         }
+    }
+
+    public getClient(): RedisClientType {
+        return this.client;
     }
 
     // File Cache Methods
@@ -162,3 +124,4 @@ export const setCache = (key: string, value: any, expired: number) => cache.set(
 export const getCache = <T>(key: string) => cache.get<T>(key);
 export const deleteCache = (key: string) => cache.delete(key);
 export const flushCache = () => cache.flush();
+export const getRedisClient = (): RedisClientType => cache.getClient();

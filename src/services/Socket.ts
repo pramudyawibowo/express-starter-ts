@@ -1,10 +1,10 @@
 import { Server as SocketIOServer } from "socket.io";
 import type { Server as HTTPServer } from "http";
-import { createClient } from "redis";
 import { createAdapter } from "@socket.io/redis-adapter";
 import { verifyAccessToken } from "@helpers/Jwt";
 import { prisma } from "@helpers/Prisma";
 import { deleteCache, setCache } from "@helpers/Cache";
+import { getRedisClient, isRedisConnected } from "@helpers/Redis";
 
 export class SocketService {
     private static io: SocketIOServer;
@@ -17,53 +17,45 @@ export class SocketService {
             },
         });
 
-        const isMasterInstance = process.env.NODE_APP_INSTANCE === "0";
+        const isMasterInstance =
+            process.env.NODE_APP_INSTANCE === "0" ||
+            process.env.PM2_INSTANCE_ID === "0" ||
+            (process.env.NODE_APP_INSTANCE === undefined && process.env.PM2_INSTANCE_ID === undefined);
 
-        let redisConnected = false;
+        let redisConnected = isRedisConnected();
 
-        try {
-            const host = process.env.REDIS_HOST || "127.0.0.1";
-            const port = process.env.REDIS_PORT || "6379";
-            const user = process.env.REDIS_USER || "default";
-            const pass = process.env.REDIS_PASSWORD || "";
+        if (redisConnected) {
+            try {
+                const pubClient = getRedisClient();
+                const subClient = pubClient.duplicate();
 
-            // Fix URL construction logic
-            const redisUrl = `redis://${host}:${port}`;
+                // Add error handlers for Redis clients
+                pubClient.on("error", (err) => {
+                    console.error("Redis pub client error:", err);
+                });
 
-            const pubClient = createClient({
-                url: redisUrl,
-                username: user,
-                password: pass,
-            });
+                subClient.on("error", (err) => {
+                    console.error("Redis sub client error:", err);
+                });
 
-            const subClient = pubClient.duplicate();
+                await subClient.connect();
 
-            // Add error handlers for Redis clients
-            pubClient.on("error", (err) => {
-                console.error("Redis pub client error:", err);
-            });
+                this.io.adapter(createAdapter(pubClient, subClient));
 
-            subClient.on("error", (err) => {
-                console.error("Redis sub client error:", err);
-            });
-
-            await Promise.all([pubClient.connect(), subClient.connect()]);
-
-            this.io.adapter(createAdapter(pubClient, subClient));
-
-            redisConnected = true;
-            console.log("✅ Redis connected, adapter enabled");
-        } catch (error) {
-            console.error("❌ Redis connection failed, running Socket.IO only on one instance", error);
+                console.log("✅ Redis connected, adapter enabled");
+            } catch (error) {
+                console.error("❌ Redis adapter setup failed, running Socket.IO only on one instance", error);
+                redisConnected = false;
+            }
         }
 
         if (!redisConnected) {
-            if (!isMasterInstance) {
+            if (isMasterInstance) {
+                console.log("Socket.IO running on master instance without Redis adapter");
+            } else {
                 console.log("Socket.IO disabled on this instance (not master)");
                 this.io.close();
                 return;
-            } else {
-                console.log("Socket.IO running on master instance without Redis adapter");
             }
         }
 

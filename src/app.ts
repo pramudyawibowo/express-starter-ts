@@ -51,7 +51,7 @@ class App {
         this.app.use("/notifications", AuthMiddleware, NotificationController);
         this.app.use("/article-categories", AuthMiddleware, ArticleCategoryController);
         this.app.use("/articles", AuthMiddleware, ArticleController);
-        this.app.use("/messages", AuthMiddleware, MessageController); // Import MessageController dynamically
+        this.app.use("/messages", AuthMiddleware, MessageController);
 
         // Handle unknown routes (catch-all route)
         const notFoundHandler: RequestHandler = (_req: Request, res: Response, _next: NextFunction): void => {

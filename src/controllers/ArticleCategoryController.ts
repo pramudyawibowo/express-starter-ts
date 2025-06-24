@@ -162,4 +162,6 @@ class ArticleCategoryController extends Controller {
     }
 }
 
-export default new ArticleCategoryController().getRouter();
+const articleCategoryController = new ArticleCategoryController();
+export default articleCategoryController.getRouter();
+export { ArticleCategoryController };

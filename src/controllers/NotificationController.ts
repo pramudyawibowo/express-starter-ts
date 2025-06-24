@@ -1,11 +1,12 @@
 import Controller from "./Controller";
 import type { Request, Response } from "express";
 import { Router } from "express";
-import { body, validationResult } from "express-validator";
 import NotificationResource from "@resources/NotificationResource";
 import { prisma } from "@helpers/Prisma";
 import { SocketService } from "@services/Socket";
 import { autobind } from "@utils/Autobind";
+import Joi from "joi";
+import { joiValidate } from "@helpers/Joi";
 
 class NotificationController extends Controller {
     private router: Router;
@@ -24,7 +25,7 @@ class NotificationController extends Controller {
     public routes(): void {
         this.router.get("/", this.index);
         this.router.get("/:id", this.show);
-        this.router.post("/", this.validateStore, this.store);
+        this.router.post("/", this.store);
         this.router.put("/:id", this.update);
         this.router.delete("/:id", this.destroy);
     }
@@ -59,11 +60,16 @@ class NotificationController extends Controller {
         }
     }
 
-    private validateStore = [body("title", "title is required").notEmpty(), body("message", "message is required").notEmpty()];
     public async store(req: Request, res: Response): Promise<Response> {
         try {
-            const errors = validationResult(req);
-            if (!errors.isEmpty()) return super.badRequest(res, errors.array());
+            const schema = Joi.object({
+                title: Joi.string().required(),
+                message: Joi.string().required(),
+                json: Joi.object().optional(),
+            });
+
+            const validationErrors = await joiValidate(req, schema);
+            if (validationErrors) return super.badRequest(res, validationErrors);
 
             const { title, message } = req.body;
             const notification = await prisma.notification.create({
@@ -86,8 +92,13 @@ class NotificationController extends Controller {
 
     public async update(req: Request, res: Response): Promise<Response> {
         try {
-            const errors = validationResult(req);
-            if (!errors.isEmpty()) return super.badRequest(res, errors.array());
+            const schema = Joi.object({
+                title: Joi.string().optional(),
+                message: Joi.string().optional(),
+                json: Joi.object().optional(),
+            });
+            const validationErrors = await joiValidate(req, schema);
+            if (validationErrors) return super.badRequest(res, validationErrors);
 
             const { id } = req.params;
             const { title, message } = req.body;
